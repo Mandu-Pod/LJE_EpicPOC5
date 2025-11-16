@@ -317,8 +317,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   paperSize: 5
-  paperMaterial: {fileID: 2100000, guid: d01ab3489ca56e544aafa8b9399113d5, type: 2}
+  paperFrontMaterial: {fileID: 2100000, guid: d01ab3489ca56e544aafa8b9399113d5, type: 2}
+  paperBackMaterial: {fileID: 2100000, guid: f3bf0975444cea742b56f34903bc3170, type: 2}
   meshTransform: {fileID: 52780680}
+  paperFrontColor: {r: 0.9245283, g: 0.85418993, b: 0.16135636, a: 1}
+  paperBackColor: {r: 0.9056604, g: 0.38020647, b: 0.8184005, a: 1}
 --- !u!4 &2036517303
 Transform:
   m_ObjectHideFlags: 0

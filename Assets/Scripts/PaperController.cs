@@ -1,13 +1,19 @@
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 public class PaperController : MonoBehaviour
 {
     [Header("Paper Settings")]
     [SerializeField] private float paperSize = 5f;
-    [SerializeField] private Material paperMaterial;
+    [SerializeField] private Material paperFrontMaterial;
+    [SerializeField] private Material paperBackMaterial;
     [SerializeField] private Transform meshTransform;
+
+    [SerializeField] private Color paperFrontColor;
+    [SerializeField] private Color paperBackColor;
+
+
     private Mesh paperMesh;
     private MeshFilter meshFilter;
     private MeshRenderer meshRenderer;
@@ -37,14 +43,14 @@ public class PaperController : MonoBehaviour
         MeshRenderer thisMeshRenderer = meshObj.AddComponent<MeshRenderer>();
         // PolygonCollider2D thisPolygonCollider = meshObj.AddComponent<PolygonCollider2D>();
 
-        if (paperMaterial != null)
-            thisMeshRenderer.material = paperMaterial;
+        if (paperFrontMaterial != null)
+            thisMeshRenderer.material = paperFrontMaterial;
 
         paperMesh = new Mesh();
         paperMesh.name = paperName + "0";
 
         Vector2[] scaledVertices = ScaleArray(squareVertices, paperSize);
-        currentVerticesLayers.Add(scaledVertices.ToList());
+        currentVerticesLayers.Add(new List<Vector2>(scaledVertices));
 
         paperMesh.vertices = ToVector3(scaledVertices);
         paperMesh.triangles = GenerateConvexTriangles(squareVertices.Length);
@@ -60,9 +66,10 @@ public class PaperController : MonoBehaviour
 
     private void Awake()
     {
+        paperFrontMaterial.color = paperFrontColor;
+        paperBackMaterial.color = paperBackColor;
         InitializePaper();
     }
-
 
 
     private void Update()
@@ -76,6 +83,7 @@ public class PaperController : MonoBehaviour
         else if (Input.GetMouseButtonUp(0))
         {
             isDragging = false;
+            currentVerticesLayers = new List<List<Vector2>>(newVerticesLayers);
         }
 
         if (isDragging)
@@ -86,12 +94,13 @@ public class PaperController : MonoBehaviour
 
     private Vector2 pointA;
     private Vector2 pointB;
+    private List<List<Vector2>> newVerticesLayers = new();
 
     private void UpdatePaperVisuals()
     {
         pointB = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        List<List<Vector2>> newVerticesLayers = new();
-        // List<List<Vector2>> intersectionsPointsLayers = new();
+        newVerticesLayers.Clear();
+        List<bool> layerFolded = new();
         Vector2 midPoint = (pointA + pointB) / 2f;
         Vector2 abDirection = (pointB - pointA).normalized;
         Vector2 foldAxis = new(-abDirection.y, abDirection.x);
@@ -100,7 +109,6 @@ public class PaperController : MonoBehaviour
         {
             return;
         }
-
         foreach (List<Vector2> layer in currentVerticesLayers)
         {
             List<Vector2> polyA, polyB;
@@ -108,18 +116,20 @@ public class PaperController : MonoBehaviour
             if (polyA.Count > 2)
             {
                 newVerticesLayers.Add(polyA);
+                layerFolded.Add(true);
             }
             if (polyB.Count > 2)
             {
                 newVerticesLayers.Add(polyB);
+                layerFolded.Add(false);
             }
         }
 
-        UpdateMeshes(newVerticesLayers);
+        UpdateMeshes(newVerticesLayers, layerFolded);
     }
 
 
-    private void UpdateMeshes(List<List<Vector2>> verticesLayers)
+    private void UpdateMeshes(List<List<Vector2>> verticesLayers, List<bool> layerFolded)
     {
         if (meshTransform.childCount < verticesLayers.Count)
         {
@@ -130,8 +140,8 @@ public class PaperController : MonoBehaviour
                 meshObj.AddComponent<MeshFilter>();
                 MeshRenderer thisMeshRenderer = meshObj.AddComponent<MeshRenderer>();
 
-                if (paperMaterial != null)
-                    thisMeshRenderer.material = paperMaterial;
+                if (paperFrontMaterial != null)
+                    thisMeshRenderer.material = paperFrontMaterial;
 
             }
         }
@@ -154,6 +164,17 @@ public class PaperController : MonoBehaviour
 
                 thisMeshFilter.mesh = layerMesh;
                 child.gameObject.SetActive(true);
+                MeshRenderer thisMeshRenderer = child.GetComponent<MeshRenderer>();
+                if (layerFolded[i])
+                {
+                    if (paperBackMaterial != null)
+                        thisMeshRenderer.material = paperBackMaterial;
+                }
+                else
+                {
+                    if (paperFrontMaterial != null)
+                        thisMeshRenderer.material = paperFrontMaterial;
+                }
             }
             else
             {
@@ -239,8 +260,6 @@ public class PaperController : MonoBehaviour
                 }
             }
         }
-        // Debug.Log(string.Join(", ", polygonA.Select(v => v.ToString())));
-        // Debug.Log(string.Join(", ", polygonB.Select(v => v.ToString())));
     }
 
     private bool LineSegmentIntersection(
