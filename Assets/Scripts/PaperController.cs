@@ -1,352 +1,367 @@
-using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 
 public class PaperController : MonoBehaviour
 {
     [Header("Paper Settings")]
-    [SerializeField] private float paperSize = 10f;
+    [SerializeField] private float paperSize = 5f;
     [SerializeField] private Material paperMaterial;
-
+    [SerializeField] private Transform meshTransform;
+    private Mesh paperMesh;
     private MeshFilter meshFilter;
     private MeshRenderer meshRenderer;
-    private PolygonCollider2D polyCollider;
-    private Mesh paperMesh;
+    private string paperName = "PaperMesh";
+    private List<List<Vector2>> currentVerticesLayers = new();
 
-    private Vector2 dragStartPoint;
     private bool isDragging = false;
-    private Camera mainCamera;
 
-    private List<Vector2> vertices = new List<Vector2>();
-    private List<Vector2> originalVertices = new List<Vector2>(); // 드래그 시작 시 원본
-    private List<GameObject> foldedLayers = new List<GameObject>(); // 접힌 레이어들
-    private GameObject previewLayer; // 미리보기 레이어
-
-    void Start()
+    private Vector2[] squareVertices = new Vector2[]
     {
-        mainCamera = Camera.main;
+        new(-0.5f, -0.5f),
+        new(0.5f, -0.5f),
+        new(0.5f, 0.5f),
+        new(-0.5f, 0.5f)
+    };
 
-        // Setup mesh components
-        if (meshFilter == null)
-            meshFilter = gameObject.AddComponent<MeshFilter>();
-        if (meshRenderer == null)
-            meshRenderer = gameObject.AddComponent<MeshRenderer>();
-        if (polyCollider == null)
-            polyCollider = gameObject.AddComponent<PolygonCollider2D>();
+    private void InitializePaper()
+    {
+        CreateSquareMesh();
+    }
+
+    void CreateSquareMesh()
+    {
+        GameObject meshObj = new(paperName + "0");
+        meshObj.transform.parent = meshTransform.transform;
+        MeshFilter thisMeshFilter = meshObj.AddComponent<MeshFilter>();
+        MeshRenderer thisMeshRenderer = meshObj.AddComponent<MeshRenderer>();
+        // PolygonCollider2D thisPolygonCollider = meshObj.AddComponent<PolygonCollider2D>();
 
         if (paperMaterial != null)
-            meshRenderer.material = paperMaterial;
-        else
-        {
-            paperMaterial = new Material(Shader.Find("Sprites/Default"));
-            paperMaterial.color = Color.white;
-            meshRenderer.material = paperMaterial;
-        }
+            thisMeshRenderer.material = paperMaterial;
 
-        InitializePaper();
-    }
-
-    void InitializePaper()
-    {
         paperMesh = new Mesh();
-        paperMesh.name = "Paper";
+        paperMesh.name = paperName + "0";
 
-        // Create a square paper
-        vertices.Clear();
+        Vector2[] scaledVertices = ScaleArray(squareVertices, paperSize);
+        currentVerticesLayers.Add(scaledVertices.ToList());
 
-        float half = paperSize / 2f;
-
-        vertices.Add(new Vector2(-half, -half));
-        vertices.Add(new Vector2(half, -half));
-        vertices.Add(new Vector2(half, half));
-        vertices.Add(new Vector2(-half, half));
-
-        UpdateMesh();
-        UpdateCollider();
-
-        Debug.Log("Paper initialized");
-    }
-
-    void UpdateMesh()
-    {
-        if (paperMesh == null)
-        {
-            paperMesh = new Mesh();
-            paperMesh.name = "Paper";
-        }
-
-        paperMesh.Clear();
-
-        // Convert Vector2 to Vector3
-        Vector3[] vertices3D = new Vector3[vertices.Count];
-        for (int i = 0; i < vertices.Count; i++)
-        {
-            vertices3D[i] = new Vector3(vertices[i].x, vertices[i].y, 0);
-        }
-
-        // Create triangles (fan triangulation)
-        int[] triangles = new int[(vertices.Count - 2) * 3];
-        for (int i = 0; i < vertices.Count - 2; i++)
-        {
-            triangles[i * 3] = 0;
-            triangles[i * 3 + 1] = i + 1;
-            triangles[i * 3 + 2] = i + 2;
-        }
-
-        paperMesh.vertices = vertices3D;
-        paperMesh.triangles = triangles;
+        paperMesh.vertices = ToVector3(scaledVertices);
+        paperMesh.triangles = GenerateConvexTriangles(squareVertices.Length);
         paperMesh.RecalculateNormals();
         paperMesh.RecalculateBounds();
 
-        meshFilter.mesh = paperMesh;
+        paperMesh.uv = CalculateUVsFromBounds(scaledVertices);
+
+
+        thisMeshFilter.mesh = paperMesh;
+        // thisPolygonCollider.points = scaledVertices;
     }
 
-    void UpdateCollider()
+    private void Awake()
     {
-        polyCollider.points = vertices.ToArray();
+        InitializePaper();
     }
 
-    void Update()
-    {
-        HandleDragInput();
-    }
 
-    void HandleDragInput()
+
+    private void Update()
     {
+
         if (Input.GetMouseButtonDown(0))
         {
-            Vector2 mousePos = mainCamera.ScreenToWorldPoint(Input.mousePosition);
-            RaycastHit2D hit = Physics2D.Raycast(mousePos, Vector2.zero);
-
-            if (hit.collider != null && hit.collider.gameObject == gameObject)
-            {
-                isDragging = true;
-                dragStartPoint = hit.point;
-                originalVertices = new List<Vector2>(vertices); // 원본 저장
-                Debug.Log($"Started dragging at: {dragStartPoint}");
-            }
+            isDragging = true;
+            pointA = Camera.main.ScreenToWorldPoint(Input.mousePosition);
         }
-
-        if (Input.GetMouseButton(0) && isDragging)
+        else if (Input.GetMouseButtonUp(0))
         {
-            // 실시간 미리보기 (메쉬만 업데이트)
-            Vector2 currentPoint = mainCamera.ScreenToWorldPoint(Input.mousePosition);
-            FoldPaper(dragStartPoint, currentPoint, false); // 미리보기 모드
-        }
-
-        if (Input.GetMouseButtonUp(0) && isDragging)
-        {
-            Vector2 dragEndPoint = mainCamera.ScreenToWorldPoint(Input.mousePosition);
-            Debug.Log($"Ended dragging at: {dragEndPoint}");
-
-            // 최종 접기 적용 (콜라이더도 업데이트)
-            FoldPaper(dragStartPoint, dragEndPoint, true); // 최종 모드
-
             isDragging = false;
-            originalVertices.Clear();
         }
 
-        // Visual feedback during drag
         if (isDragging)
         {
-            Vector2 currentPoint = mainCamera.ScreenToWorldPoint(Input.mousePosition);
-            Debug.DrawLine(dragStartPoint, currentPoint, Color.yellow);
+            UpdatePaperVisuals();
         }
     }
 
-    void FoldPaper(Vector2 startPoint, Vector2 endPoint, bool isFinal)
+    private Vector2 pointA;
+    private Vector2 pointB;
+
+    private void UpdatePaperVisuals()
     {
-        // 미리보기일 때는 원본으로 복원
-        if (!isFinal)
-        {
-            // 기존 미리보기 레이어 제거
-            if (previewLayer != null)
-            {
-                Destroy(previewLayer);
-            }
-            vertices = new List<Vector2>(originalVertices);
-        }
+        pointB = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+        List<List<Vector2>> newVerticesLayers = new();
+        // List<List<Vector2>> intersectionsPointsLayers = new();
+        Vector2 midPoint = (pointA + pointB) / 2f;
+        Vector2 abDirection = (pointB - pointA).normalized;
+        Vector2 foldAxis = new(-abDirection.y, abDirection.x);
 
-        // Convert to local space
-        startPoint = transform.InverseTransformPoint(startPoint);
-        endPoint = transform.InverseTransformPoint(endPoint);
-
-        // If points are too close, don't fold
-        if (Vector2.Distance(startPoint, endPoint) < 0.1f)
+        if (abDirection == Vector2.zero)
         {
-            if (!isFinal)
-            {
-                UpdateMesh(); // 미리보기: 메쉬만
-            }
             return;
         }
 
-        // Calculate fold line: perpendicular bisector
-        Vector2 midPoint = (startPoint + endPoint) / 2f;
-        Vector2 connectingLine = (endPoint - startPoint).normalized;
-        Vector2 foldLineNormal = new Vector2(-connectingLine.y, connectingLine.x);
-
-        // 1. 접힐 부분(startPoint 쪽)과 남을 부분을 분리
-        List<Vector2> foldedVertices = new List<Vector2>();
-        List<Vector2> remainingVertices = new List<Vector2>();
-        List<Vector2> intersectionPoints = new List<Vector2>();
-
-        for (int i = 0; i < vertices.Count; i++)
+        foreach (List<Vector2> layer in currentVerticesLayers)
         {
-            Vector2 vertex = vertices[i];
-            Vector2 toVertex = vertex - midPoint;
-            float sideDistance = Vector2.Dot(toVertex, foldLineNormal);
-
-            Vector2 toStart = startPoint - midPoint;
-            float startSide = Vector2.Dot(toStart, foldLineNormal);
-
-            if (Mathf.Sign(sideDistance) == Mathf.Sign(startSide))
+            List<Vector2> polyA, polyB;
+            SplitPolygonByLine(layer, midPoint, abDirection, foldAxis, out polyA, out polyB);
+            if (polyA.Count > 2)
             {
-                foldedVertices.Add(vertex);
+                newVerticesLayers.Add(polyA);
+            }
+            if (polyB.Count > 2)
+            {
+                newVerticesLayers.Add(polyB);
+            }
+        }
+
+        UpdateMeshes(newVerticesLayers);
+    }
+
+
+    private void UpdateMeshes(List<List<Vector2>> verticesLayers)
+    {
+        if (meshTransform.childCount < verticesLayers.Count)
+        {
+            for (int i = meshTransform.childCount; i < verticesLayers.Count; i++)
+            {
+                GameObject meshObj = new(paperName + i);
+                meshObj.transform.parent = meshTransform.transform;
+                meshObj.AddComponent<MeshFilter>();
+                MeshRenderer thisMeshRenderer = meshObj.AddComponent<MeshRenderer>();
+
+                if (paperMaterial != null)
+                    thisMeshRenderer.material = paperMaterial;
+
+            }
+        }
+
+        for (int i = 0; i < meshTransform.childCount; i++)
+        {
+            Transform child = meshTransform.GetChild(i);
+            MeshFilter thisMeshFilter = child.GetComponent<MeshFilter>();
+
+            if (i < verticesLayers.Count)
+            {
+                Vector2[] layerVertices = verticesLayers[i].ToArray();
+
+                Mesh layerMesh = new Mesh();
+                layerMesh.name = paperName + i;
+                layerMesh.vertices = ToVector3(layerVertices);
+                layerMesh.triangles = GenerateConvexTriangles(layerVertices.Length);
+                layerMesh.RecalculateNormals();
+                layerMesh.RecalculateBounds();
+
+                thisMeshFilter.mesh = layerMesh;
+                child.gameObject.SetActive(true);
             }
             else
             {
-                remainingVertices.Add(vertex);
-            }
-
-            // 선분이 fold line과 교차하는지 확인
-            int nextIdx = (i + 1) % vertices.Count;
-            Vector2 nextVertex = vertices[nextIdx];
-            Vector2 toNext = nextVertex - midPoint;
-            float nextSide = Vector2.Dot(toNext, foldLineNormal);
-
-            if (Mathf.Sign(sideDistance) != Mathf.Sign(nextSide) && Mathf.Abs(sideDistance) > 0.01f && Mathf.Abs(nextSide) > 0.01f)
-            {
-                float t = sideDistance / (sideDistance - nextSide);
-                Vector2 intersection = vertex + t * (nextVertex - vertex);
-                intersectionPoints.Add(intersection);
+                child.gameObject.SetActive(false);
             }
         }
+    }
 
-        if (foldedVertices.Count == 0)
+
+
+    // 유틸리티 함수들 ---------------------------------
+
+    private Vector2 ReflectPointAcrossLine(Vector2 p0, Vector2 dir, Vector2 point)
+    {
+        Vector2 n = dir.normalized; // direction of the line
+
+        Vector2 v = point - p0;              // from line point to target point
+        float projScalar = Vector2.Dot(v, n);
+        Vector2 proj = n * projScalar;        // projection onto line
+        Vector2 perp = v - proj;              // perpendicular component
+
+        return point - 2f * perp;             // reflect
+    }
+
+    // 점이 선의 어느 쪽에 있는지 판별합니다.
+    private int GetSide(Vector2 point, Vector2 linePoint, Vector2 lineNormal)
+    {
+        Vector2 vecToPoint = point - linePoint;
+        float dot = Vector2.Dot(vecToPoint, lineNormal);
+        if (Mathf.Approximately(dot, 0f))
         {
-            if (!isFinal)
-            {
-                UpdateMesh(); // 미리보기: 메쉬만
-            }
+            return 0;
+        }
+
+        if (dot < 0)
+        {
+            return -1;
+        }
+
+        return 1;
+    }
+
+    ///하나의 폴리곤을 무한한 선을 기준으로 두 개의 폴리곤(A, B)으로 분할합니다.
+    private void SplitPolygonByLine(List<Vector2> polygon, Vector2 linePoint, Vector2 lineNormal, Vector2 lineDirection,
+                                    out List<Vector2> polygonA, out List<Vector2> polygonB)
+    {
+        polygonA = new List<Vector2>();
+        polygonB = new List<Vector2>();
+
+        if (polygon == null || polygon.Count < 3)
+        {
             return;
         }
 
-        // 2. 접힌 부분을 반사시켜서 레이어 생성
-        GameObject foldedLayer = new GameObject(isFinal ? "FoldedLayer" : "PreviewLayer");
-        foldedLayer.transform.SetParent(transform);
-        foldedLayer.transform.localPosition = Vector3.zero;
-        foldedLayer.transform.localRotation = Quaternion.identity;
-        foldedLayer.transform.localScale = Vector3.one;
-
-        MeshFilter layerMeshFilter = foldedLayer.AddComponent<MeshFilter>();
-        MeshRenderer layerMeshRenderer = foldedLayer.AddComponent<MeshRenderer>();
-
-        // 최종일 때만 콜라이더 추가
-        PolygonCollider2D layerCollider = null;
-        if (isFinal)
+        for (int i = 0; i < polygon.Count; i++)
         {
-            layerCollider = foldedLayer.AddComponent<PolygonCollider2D>();
-        }
+            Vector2 p1 = polygon[i];
+            Vector2 p2 = polygon[(i + 1) % polygon.Count];
 
-        // 미리보기는 반투명
-        if (!isFinal)
-        {
-            Material previewMaterial = new Material(paperMaterial);
-            Color previewColor = previewMaterial.color;
-            previewColor.a = 0.7f;
-            previewMaterial.color = previewColor;
-            layerMeshRenderer.material = previewMaterial;
-            previewLayer = foldedLayer;
-        }
-        else
-        {
-            layerMeshRenderer.material = paperMaterial;
-        }
+            int p1Side = GetSide(p1, linePoint, lineNormal);
+            int p2Side = GetSide(p2, linePoint, lineNormal);
 
-        // 반사된 꼭지점 생성
-        List<Vector2> reflectedVertices = new List<Vector2>();
-        foreach (Vector2 v in foldedVertices)
-        {
-            Vector2 toV = v - midPoint;
-            float dist = Vector2.Dot(toV, foldLineNormal);
-            Vector2 reflected = v - 2f * dist * foldLineNormal;
-            reflectedVertices.Add(reflected);
-        }
-
-        reflectedVertices.AddRange(intersectionPoints);
-
-        if (reflectedVertices.Count >= 3)
-        {
-            // 메쉬 생성
-            Mesh layerMesh = new Mesh();
-            layerMesh.name = isFinal ? "FoldedLayer" : "PreviewLayer";
-
-            Vector3[] layerVertices3D = new Vector3[reflectedVertices.Count];
-            for (int i = 0; i < reflectedVertices.Count; i++)
+            if (p1Side == -1)
             {
-                layerVertices3D[i] = new Vector3(reflectedVertices[i].x, reflectedVertices[i].y, 0.01f);
+                polygonA.Add(ReflectPointAcrossLine(linePoint, lineDirection, p1));
+            }
+            else if (p1Side == 1)
+            {
+                polygonB.Add(p1);
+            }
+            else
+            {
+                polygonA.Add(p1);
+                polygonB.Add(p1);
             }
 
-            int[] layerTriangles = new int[(reflectedVertices.Count - 2) * 3];
-            for (int i = 0; i < reflectedVertices.Count - 2; i++)
+            if (p1Side * p2Side < 0)
             {
-                layerTriangles[i * 3] = 0;
-                layerTriangles[i * 3 + 1] = i + 1;
-                layerTriangles[i * 3 + 2] = i + 2;
-            }
-
-            layerMesh.vertices = layerVertices3D;
-            layerMesh.triangles = layerTriangles;
-            layerMesh.RecalculateNormals();
-            layerMesh.RecalculateBounds();
-
-            layerMeshFilter.mesh = layerMesh;
-
-            // 최종일 때만 콜라이더 설정
-            if (isFinal && layerCollider != null)
-            {
-                layerCollider.points = reflectedVertices.ToArray();
-                foldedLayers.Add(foldedLayer);
+                if (LineSegmentIntersection(linePoint, lineDirection, p1, p2, out Vector2 intersection))
+                {
+                    polygonA.Add(intersection);
+                    polygonB.Add(intersection);
+                }
             }
         }
-
-        // 3. 기존 종이는 남은 부분 + 교차점으로 갱신
-        remainingVertices.AddRange(intersectionPoints);
-        vertices = remainingVertices;
-
-        UpdateMesh(); // 메쉬는 항상 업데이트
-
-        // 콜라이더는 최종일 때만 업데이트
-        if (isFinal)
-        {
-            UpdateCollider();
-
-            // Notify game manager
-            GameManager gameManager = FindFirstObjectByType<GameManager>();
-            if (gameManager != null)
-            {
-                gameManager.OnPaperFolded();
-            }
-
-            Debug.Log("Paper folded successfully!");
-        }
+        // Debug.Log(string.Join(", ", polygonA.Select(v => v.ToString())));
+        // Debug.Log(string.Join(", ", polygonB.Select(v => v.ToString())));
     }
 
-    public Bounds GetPaperBounds()
+    private bool LineSegmentIntersection(
+        Vector2 linePoint, Vector2 lineDir,
+        Vector2 segA, Vector2 segB,
+        out Vector2 hitPoint)
     {
-        if (meshFilter != null && meshFilter.mesh != null)
-        {
-            return meshFilter.mesh.bounds;
-        }
-        return new Bounds(Vector3.zero, Vector3.one * paperSize);
+        hitPoint = Vector2.zero;
+
+        Vector2 v1 = linePoint - segA;
+        Vector2 v2 = segB - segA;
+        Vector2 v3 = new Vector2(-lineDir.y, lineDir.x); // lineDir의 수직 벡터
+
+        float dot = Vector2.Dot(v2, v3);
+
+        // dot == 0 → 평행 (교차 X 또는 무한히 겹침)
+        if (Mathf.Abs(dot) < Mathf.Epsilon)
+            return false;
+
+        float t1 = Cross(v2, v1) / dot;     // line param
+        float t2 = Vector2.Dot(v1, v3) / dot; // segment param (0~1 → 선분 내부)
+
+        if (t2 < 0f || t2 > 1f)
+            return false; // 선분 범위 밖
+
+        hitPoint = linePoint + lineDir * t1;
+        return true;
     }
 
-    public Vector3 GetRandomPositionOnPaper()
+    private float Cross(Vector2 a, Vector2 b)
     {
-        Bounds bounds = GetPaperBounds();
-        float x = Random.Range(bounds.min.x, bounds.max.x);
-        float y = Random.Range(bounds.min.y, bounds.max.y);
-        return transform.TransformPoint(new Vector3(x, y, 0.1f));
+        return a.x * b.y - a.y * b.x;
+    }
+
+    private Vector2[] CalculateUVsFromBounds(Vector2[] vertices)
+    {
+        if (vertices == null || vertices.Length < 3)
+        {
+            return new Vector2[0];
+        }
+
+        float minX = vertices[0].x;
+        float minY = vertices[0].y;
+        float maxX = vertices[0].x;
+        float maxY = vertices[0].y;
+
+        for (int i = 1; i < vertices.Length; i++)
+        {
+            if (vertices[i].x < minX) minX = vertices[i].x;
+            if (vertices[i].x > maxX) maxX = vertices[i].x;
+            if (vertices[i].y < minY) minY = vertices[i].y;
+            if (vertices[i].y > maxY) maxY = vertices[i].y;
+        }
+
+        float width = maxX - minX;
+        float height = maxY - minY;
+
+        bool widthIsZero = Mathf.Approximately(width, 0f);
+        bool heightIsZero = Mathf.Approximately(height, 0f);
+
+        Vector2[] uvs = new Vector2[vertices.Length];
+        for (int i = 0; i < vertices.Length; i++)
+        {
+            float uvX = widthIsZero ? 0.5f : (vertices[i].x - minX) / width;
+            float uvY = heightIsZero ? 0.5f : (vertices[i].y - minY) / height;
+            uvs[i] = new Vector2(uvX, uvY);
+        }
+
+        return uvs;
+    }
+    private int[] GenerateConvexTriangles(int vertexCount)
+    {
+        if (vertexCount < 3)
+        {
+            return new int[0];
+        }
+
+        int[] triangles = new int[(vertexCount - 2) * 3];
+        int triangleIndex = 0;
+
+        for (int i = 0; i < vertexCount - 2; i++)
+        {
+            triangles[triangleIndex + 0] = 0;
+            triangles[triangleIndex + 1] = i + 1;
+            triangles[triangleIndex + 2] = i + 2;
+
+            triangleIndex += 3;
+        }
+
+        return triangles;
+    }
+
+    private Vector3[] ToVector3(Vector2[] v2Array, float z = 0f)
+    {
+        Vector3[] v3Array = new Vector3[v2Array.Length];
+        for (int i = 0; i < v2Array.Length; i++)
+        {
+            v3Array[i] = new Vector3(v2Array[i].x, v2Array[i].y, z);
+        }
+        return v3Array;
+    }
+
+    private Vector2[] ScaleArray(Vector2[] v2Array, float scale)
+    {
+        Vector2[] scaledArray = new Vector2[v2Array.Length];
+
+        for (int i = 0; i < v2Array.Length; i++)
+        {
+            scaledArray[i] = v2Array[i] * scale;
+        }
+
+        return scaledArray;
+    }
+
+    private Vector3[] ScaleArray(Vector3[] v3Array, float scale)
+    {
+        Vector3[] scaledArray = new Vector3[v3Array.Length];
+        for (int i = 0; i < v3Array.Length; i++)
+        {
+            scaledArray[i] = v3Array[i] * scale;
+        }
+        return scaledArray;
     }
 }
