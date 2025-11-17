@@ -1,9 +1,11 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UIElements;
 
-public class PaperController : MonoBehaviour
+public class PaperController : SingletonObject<PaperController>
 {
+    public static event Action OnPaperFolded;
+
     [Header("Paper Settings")]
     [SerializeField] private float paperSize = 5f;
     [SerializeField] private Material paperFrontMaterial;
@@ -33,6 +35,7 @@ public class PaperController : MonoBehaviour
     private void InitializePaper()
     {
         CreateSquareMesh();
+        OnPaperFolded?.Invoke();
     }
 
     void CreateSquareMesh()
@@ -64,8 +67,9 @@ public class PaperController : MonoBehaviour
         // thisPolygonCollider.points = scaledVertices;
     }
 
-    private void Awake()
+    protected override void Awake()
     {
+        base.Awake();
         paperFrontMaterial.color = paperFrontColor;
         paperBackMaterial.color = paperBackColor;
         InitializePaper();
@@ -74,6 +78,11 @@ public class PaperController : MonoBehaviour
 
     private void Update()
     {
+        if (Input.GetMouseButtonDown(1))
+        {
+            isDragging = false;
+            UpdateMeshes(currentVerticesLayers, new List<bool>(new bool[currentVerticesLayers.Count]));
+        }
 
         if (Input.GetMouseButtonDown(0))
         {
@@ -82,8 +91,12 @@ public class PaperController : MonoBehaviour
         }
         else if (Input.GetMouseButtonUp(0))
         {
-            isDragging = false;
-            currentVerticesLayers = new List<List<Vector2>>(newVerticesLayers);
+            if (isDragging)
+            {
+                isDragging = false;
+                currentVerticesLayers = new List<List<Vector2>>(newVerticesLayers);
+                OnPaperFolded?.Invoke();
+            }
         }
 
         if (isDragging)
@@ -95,11 +108,13 @@ public class PaperController : MonoBehaviour
     private Vector2 pointA;
     private Vector2 pointB;
     private List<List<Vector2>> newVerticesLayers = new();
+    private List<List<Vector2>> flipedVerticesLayers = new();
 
     private void UpdatePaperVisuals()
     {
         pointB = Camera.main.ScreenToWorldPoint(Input.mousePosition);
         newVerticesLayers.Clear();
+        flipedVerticesLayers.Clear();
         List<bool> layerFolded = new();
         Vector2 midPoint = (pointA + pointB) / 2f;
         Vector2 abDirection = (pointB - pointA).normalized;
@@ -111,17 +126,20 @@ public class PaperController : MonoBehaviour
         }
         foreach (List<Vector2> layer in currentVerticesLayers)
         {
-            List<Vector2> polyA, polyB;
-            SplitPolygonByLine(layer, midPoint, abDirection, foldAxis, out polyA, out polyB);
+            List<Vector2> polyA, polyB, flipedPolyB;
+            SplitPolygonByLine(layer, midPoint, abDirection, foldAxis, out polyA, out polyB, out flipedPolyB);
             if (polyA.Count > 2)
             {
                 newVerticesLayers.Add(polyA);
-                layerFolded.Add(true);
-            }
-            if (polyB.Count > 2)
-            {
-                newVerticesLayers.Add(polyB);
                 layerFolded.Add(false);
+            }
+            if (flipedPolyB.Count > 2)
+            {
+                newVerticesLayers.Add(flipedPolyB);
+                layerFolded.Add(true);
+                flipedVerticesLayers.Add(polyB);
+                flipedVerticesLayers.Add(flipedPolyB);
+
             }
         }
 
@@ -167,13 +185,13 @@ public class PaperController : MonoBehaviour
                 MeshRenderer thisMeshRenderer = child.GetComponent<MeshRenderer>();
                 if (layerFolded[i])
                 {
-                    if (paperBackMaterial != null)
-                        thisMeshRenderer.material = paperBackMaterial;
+                    if (paperFrontMaterial != null)
+                        thisMeshRenderer.material = paperFrontMaterial;
                 }
                 else
                 {
-                    if (paperFrontMaterial != null)
-                        thisMeshRenderer.material = paperFrontMaterial;
+                    if (paperBackMaterial != null)
+                        thisMeshRenderer.material = paperBackMaterial;
                 }
             }
             else
@@ -184,8 +202,18 @@ public class PaperController : MonoBehaviour
     }
 
 
+    public Vector2 GetRandomInternalPoint()
+    {
+        return PaperRandomUtility.GetRandomPointOnPolygons(currentVerticesLayers);
+    }
+
+    public bool IsPointInsideFlipedPolygons(Vector2 point)
+    {
+        return PaperRandomUtility.IsPointInsidePolygons(point, flipedVerticesLayers);
+    }
 
     // 유틸리티 함수들 ---------------------------------
+
 
     private Vector2 ReflectPointAcrossLine(Vector2 p0, Vector2 dir, Vector2 point)
     {
@@ -219,10 +247,11 @@ public class PaperController : MonoBehaviour
 
     ///하나의 폴리곤을 무한한 선을 기준으로 두 개의 폴리곤(A, B)으로 분할합니다.
     private void SplitPolygonByLine(List<Vector2> polygon, Vector2 linePoint, Vector2 lineNormal, Vector2 lineDirection,
-                                    out List<Vector2> polygonA, out List<Vector2> polygonB)
+                                    out List<Vector2> polygonA, out List<Vector2> polygonB, out List<Vector2> flipedPolygonB)
     {
         polygonA = new List<Vector2>();
         polygonB = new List<Vector2>();
+        flipedPolygonB = new List<Vector2>();
 
         if (polygon == null || polygon.Count < 3)
         {
@@ -239,33 +268,32 @@ public class PaperController : MonoBehaviour
 
             if (p1Side == -1)
             {
-                polygonA.Add(ReflectPointAcrossLine(linePoint, lineDirection, p1));
+                polygonB.Add(p1);
+                Vector2 reflectedPoint = ReflectPointAcrossLine(linePoint, lineDirection, p1);
+                flipedPolygonB.Add(reflectedPoint);
             }
             else if (p1Side == 1)
             {
-                polygonB.Add(p1);
+                polygonA.Add(p1);
             }
             else
             {
-                polygonA.Add(p1);
                 polygonB.Add(p1);
+                polygonA.Add(p1);
             }
 
             if (p1Side * p2Side < 0)
             {
                 if (LineSegmentIntersection(linePoint, lineDirection, p1, p2, out Vector2 intersection))
                 {
-                    polygonA.Add(intersection);
                     polygonB.Add(intersection);
+                    polygonA.Add(intersection);
                 }
             }
         }
     }
 
-    private bool LineSegmentIntersection(
-        Vector2 linePoint, Vector2 lineDir,
-        Vector2 segA, Vector2 segB,
-        out Vector2 hitPoint)
+    private bool LineSegmentIntersection(Vector2 linePoint, Vector2 lineDir, Vector2 segA, Vector2 segB, out Vector2 hitPoint)
     {
         hitPoint = Vector2.zero;
 
