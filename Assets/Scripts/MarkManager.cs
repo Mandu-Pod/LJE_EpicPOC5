@@ -26,7 +26,7 @@ public class MarkManager : SingletonObject<MarkManager>
     {
         // 겹친 마크 제거 및 개수 카운트
         (int removedO, int removedX) = RemoveOverlappingMarks();
-        Debug.Log($"제거된 마크 - O: {removedO}, X: {removedX}");
+        // Debug.Log($"제거된 마크 - O: {removedO}, X: {removedX}");
 
         // 남은 O마크 개수 계산
         int remainingOMarks = GetRemainingOMarksCount();

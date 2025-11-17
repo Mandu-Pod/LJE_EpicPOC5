@@ -94,8 +94,12 @@ public class PaperController : SingletonObject<PaperController>
             if (isDragging)
             {
                 isDragging = false;
-                currentVerticesLayers = new List<List<Vector2>>(newVerticesLayers);
-                OnPaperFolded?.Invoke();
+                if (newVerticesLayers.Count > 0)
+                {
+                    currentVerticesLayers = new List<List<Vector2>>(newVerticesLayers);
+                    OnPaperFolded?.Invoke();
+                }
+
             }
         }
 
