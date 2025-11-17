@@ -81,6 +81,43 @@ public class MarkManager : SingletonObject<MarkManager>
 
             mark.SetActive(!isOverlapping);
         }
+
+        // 예상 데미지 계산 및 UI 업데이트
+        int predictedDamage = CalculatePredictedDamage();
+        UIManager.Instance?.UpdatePredictedDamage(predictedDamage);
+    }
+
+    /// <summary>
+    /// 드래그 중 예상 데미지 계산
+    /// </summary>
+    private int CalculatePredictedDamage()
+    {
+        int overlappingO = 0;
+        int overlappingX = 0;
+        int remainingO = 0;
+
+        foreach (Mark mark in allMarks)
+        {
+            if (mark == null) continue;
+
+            Vector2 markPos = mark.GetPosition();
+            bool isOverlapping = PaperController.Instance.IsPointInsideFlipedPolygons(markPos);
+
+            if (isOverlapping)
+            {
+                if (mark.Type == MarkType.O)
+                    overlappingO++;
+                else if (mark.Type == MarkType.X)
+                    overlappingX++;
+            }
+            else if (mark.Type == MarkType.O)
+            {
+                remainingO++;
+            }
+        }
+
+        // 데미지 = 남을 O마크 * 제거될 X마크
+        return remainingO * overlappingX;
     }
 
     /// <summary>

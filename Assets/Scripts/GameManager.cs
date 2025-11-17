@@ -6,7 +6,7 @@ public class GameManager : SingletonObject<GameManager>
     [SerializeField] private int totalRounds = 10;
     [SerializeField] private int enemyMaxHealth = 100;
 
-    private int currentRound = 1;  // 1라운드부터 시작
+    private int currentRound = 0;  // 1라운드부터 시작
     private int enemyCurrentHealth;
 
     protected override void Awake()

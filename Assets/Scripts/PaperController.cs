@@ -94,6 +94,10 @@ public class PaperController : SingletonObject<PaperController>
             if (isDragging)
             {
                 isDragging = false;
+
+                // 예상 데미지 UI 숨기기
+                UIManager.Instance?.HidePredictedDamage();
+
                 if (newVerticesLayers.Count > 0)
                 {
                     currentVerticesLayers = new List<List<Vector2>>(newVerticesLayers);
