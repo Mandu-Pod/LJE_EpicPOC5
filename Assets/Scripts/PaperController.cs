@@ -102,6 +102,7 @@ public class PaperController : SingletonObject<PaperController>
         if (isDragging)
         {
             UpdatePaperVisuals();
+            MarkManager.Instance?.UpdateMarkVisibility();
         }
     }
 
@@ -139,7 +140,6 @@ public class PaperController : SingletonObject<PaperController>
                 layerFolded.Add(true);
                 flipedVerticesLayers.Add(polyB);
                 flipedVerticesLayers.Add(flipedPolyB);
-
             }
         }
 
@@ -288,6 +288,7 @@ public class PaperController : SingletonObject<PaperController>
                 {
                     polygonB.Add(intersection);
                     polygonA.Add(intersection);
+                    flipedPolygonB.Add(intersection);
                 }
             }
         }
