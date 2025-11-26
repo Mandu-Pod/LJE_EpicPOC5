@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 public class GameManager : SingletonObject<GameManager>
 {
@@ -30,5 +30,7 @@ public class GameManager : SingletonObject<GameManager>
     {
         Debug.Log("[게임] 종이가 토큰으로 변환되었습니다!");
         // TODO: 새 종이 제공 또는 게임 종료 처리
+
+        InventorySystem.Instance.AddItem(MarkType.Token, 1);
     }
 }

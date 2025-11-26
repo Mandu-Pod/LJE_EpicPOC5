@@ -230,6 +230,39 @@ public class PaperController : SingletonObject<PaperController>
         }
 
         OnPaperTokenized?.Invoke();
+
+        // [추가됨] 1초 뒤에 새로운 종이 생성 (바로 생성하면 토큰화 연출이 안 보일 수 있음)
+        Invoke(nameof(CreateNewPaper), 1.0f);
+    }
+
+    public void CreateNewPaper()
+    {
+        Debug.Log("[종이] 새로운 종이 생성 중...");
+
+        // 1. 상태 플래그 초기화
+        isTokenized = false;
+        isDragging = false;
+        isInitialized = false;
+
+        // 2. 기존 데이터 리스트 초기화
+        currentVerticesLayers.Clear();
+        currentLayerFoldedStates.Clear();
+        newVerticesLayers.Clear();
+        flipedVerticesLayers.Clear();
+        foldingSourceLayers.Clear();
+        newLayerFoldedStates.Clear();
+        confirmedFlipedVerticesLayers.Clear();
+
+        // 3. 기존 메시 오브젝트 제거 (중요: 씬에 남은 오브젝트 삭제)
+        foreach (var obj in paperMeshObjects)
+        {
+            if (obj != null)
+                Destroy(obj);
+        }
+        paperMeshObjects.Clear();
+
+        // 4. 종이 재초기화 (첫 번째 레이어 생성 및 면적 계산)
+        InitializePaper();
     }
 
     private void UpdatePaperVisuals()

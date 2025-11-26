@@ -350,5 +350,7 @@ public class MarkManager : SingletonObject<MarkManager>
                 Destroy(mark.gameObject);
         }
         allMarks.Clear();
+
+        isInitialized = false;
     }
 }

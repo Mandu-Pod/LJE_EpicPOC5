@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 
@@ -80,6 +80,7 @@ public class InventoryUI : MonoBehaviour
             MarkType.Wood => "목재",
             MarkType.Axe => "도끼",
             MarkType.Pickaxe => "곡괭이",
+            MarkType.Token => "토큰",
             _ => "알 수 없음"
         };
     }
