@@ -15,14 +15,14 @@ public class PaperController : SingletonObject<PaperController>
     [SerializeField] private Transform meshTransform;
     [SerializeField] private Color paperFrontColor;
     [SerializeField] private Color paperBackColor;
-    
+
     [Header("토큰화 설정")]
     [SerializeField] private float tokenizeThreshold = 0.1f;
 
     private Mesh paperMesh;
     private string paperName = "PaperMesh";
     private List<List<Vector2>> currentVerticesLayers = new();
-    
+
     // 각 레이어가 접힌 상태인지 추적
     private List<bool> currentLayerFoldedStates = new();
 
@@ -30,7 +30,7 @@ public class PaperController : SingletonObject<PaperController>
     private float initialArea;
     private bool isTokenized = false;
     private bool isInitialized = false;
-    
+
     // 종이 메시 오브젝트만 관리하는 리스트
     private List<GameObject> paperMeshObjects = new();
 
@@ -49,7 +49,7 @@ public class PaperController : SingletonObject<PaperController>
     public float InitialArea => initialArea;
     public bool IsTokenized => isTokenized;
     public bool IsInitialized => isInitialized;
-    
+
     public float CurrentArea => CalculateUnfoldedArea();
     public float AreaRatio => initialArea > 0 ? CurrentArea / initialArea : 0f;
 
@@ -58,7 +58,7 @@ public class PaperController : SingletonObject<PaperController>
     private List<List<Vector2>> newVerticesLayers = new();
     private List<List<Vector2>> flipedVerticesLayers = new();
     private List<bool> newLayerFoldedStates = new();
-    
+
     // 접기 확정 시점 데이터 저장
     private List<List<Vector2>> confirmedFlipedVerticesLayers = new();
     private Vector2 confirmedFoldLinePoint;
@@ -67,12 +67,12 @@ public class PaperController : SingletonObject<PaperController>
     protected override void Awake()
     {
         base.Awake();
-        
+
         if (paperFrontMaterial != null)
             paperFrontMaterial.color = paperFrontColor;
         if (paperBackMaterial != null)
             paperBackMaterial.color = paperBackColor;
-            
+
         InitializePaper();
     }
 
@@ -110,43 +110,46 @@ public class PaperController : SingletonObject<PaperController>
         paperMesh.uv = CalculateUVsFromBounds(scaledVertices);
 
         thisMeshFilter.mesh = paperMesh;
-        
+
         paperMeshObjects.Add(meshObj);
     }
-    
+
     /// <summary>
     /// 접히지 않은 레이어들의 면적만 합산
     /// </summary>
     private float CalculateUnfoldedArea()
     {
         float totalArea = 0f;
-        
+
+        // 접히지 않은 레이어만 면적 계산
         for (int i = 0; i < currentVerticesLayers.Count; i++)
         {
-            // 접히지 않은 레이어만 면적 계산
-            if (i < currentLayerFoldedStates.Count && !currentLayerFoldedStates[i])
+            bool isFolded = i < currentLayerFoldedStates.Count && currentLayerFoldedStates[i];
+
+            if (!isFolded)
             {
                 totalArea += PaperAreaCalculator.CalculatePolygonArea(currentVerticesLayers[i]);
             }
         }
-        
+
         // 초기 상태에서는 전체 면적 반환
         if (totalArea == 0f && currentVerticesLayers.Count > 0)
         {
             totalArea = PaperAreaCalculator.CalculatePolygonArea(currentVerticesLayers[0]);
         }
-        
+
         return totalArea;
     }
 
     private void Update()
     {
         if (isTokenized) return;
-        
+
         // 우클릭: 접기 취소
         if (Input.GetMouseButtonDown(1))
         {
             isDragging = false;
+            Debug.Log($"[접기취소] 현재 레이어 수: {currentVerticesLayers.Count}");
             UpdateMeshes(currentVerticesLayers, currentLayerFoldedStates);
             MarkManager.Instance?.RestoreMarkVisibility();
         }
@@ -172,18 +175,23 @@ public class PaperController : SingletonObject<PaperController>
                     {
                         confirmedFlipedVerticesLayers.Add(new List<Vector2>(layer));
                     }
-                    
+
                     // 접는 선 정보 저장 (마크 반사 위치 계산용)
                     Vector2 midPoint = (pointA + pointB) / 2f;
                     Vector2 abDirection = (pointB - pointA).normalized;
                     confirmedFoldLinePoint = midPoint;
                     confirmedFoldLineDirection = new Vector2(-abDirection.y, abDirection.x);
-                    
+
                     currentVerticesLayers = new List<List<Vector2>>(newVerticesLayers);
                     currentLayerFoldedStates = new List<bool>(newLayerFoldedStates);
-                    
+
+                    Debug.Log($"[접기확정] 레이어 수: {currentVerticesLayers.Count}");
+
+                    // 접기 확정 후 메시 업데이트
+                    UpdateMeshes(currentVerticesLayers, currentLayerFoldedStates);
+
                     MarkManager.Instance?.ProcessFold();
-                    
+
                     OnPaperFolded?.Invoke();
                     CheckTokenize();
                 }
@@ -201,7 +209,7 @@ public class PaperController : SingletonObject<PaperController>
     {
         float ratio = AreaRatio;
         Debug.Log($"[종이] 현재 면적 비율: {ratio:P1}");
-        
+
         if (ratio <= tokenizeThreshold)
         {
             Tokenize();
@@ -212,15 +220,15 @@ public class PaperController : SingletonObject<PaperController>
     {
         isTokenized = true;
         Debug.Log("[종이] 토큰화! 종이가 토큰으로 변환됩니다.");
-        
+
         MarkManager.Instance?.ClearAllMarks();
-        
+
         foreach (var meshObj in paperMeshObjects)
         {
             if (meshObj != null)
                 meshObj.SetActive(false);
         }
-        
+
         OnPaperTokenized?.Invoke();
     }
 
@@ -229,7 +237,7 @@ public class PaperController : SingletonObject<PaperController>
         pointB = Camera.main.ScreenToWorldPoint(Input.mousePosition);
         newVerticesLayers.Clear();
         flipedVerticesLayers.Clear();
-        foldingSourceLayers.Clear();  // 추가
+        foldingSourceLayers.Clear();
         newLayerFoldedStates.Clear();
 
         Vector2 midPoint = (pointA + pointB) / 2f;
@@ -239,20 +247,36 @@ public class PaperController : SingletonObject<PaperController>
         if (abDirection == Vector2.zero)
             return;
 
-        foreach (List<Vector2> layer in currentVerticesLayers)
+        // [수정됨] 모든 레이어를 순회하며, 접힌 상태여도 새로운 선에 의해 잘리도록 처리
+        for (int i = 0; i < currentVerticesLayers.Count; i++)
         {
+            List<Vector2> layer = currentVerticesLayers[i];
+
+            // 현재 레이어가 이미 접혀있는 상태인지 확인
+            bool isAlreadyFolded = i < currentLayerFoldedStates.Count && currentLayerFoldedStates[i];
+
             List<Vector2> polyA, polyB, flipedPolyB;
+
+            // 조건문(if isAlreadyFolded)을 제거하고 모든 레이어를 자릅니다.
             SplitPolygonByLine(layer, midPoint, abDirection, foldAxis, out polyA, out polyB, out flipedPolyB);
+
+            // PolyA: 잘리고 남은 부분 (고정된 쪽)
             if (polyA.Count > 2)
             {
                 newVerticesLayers.Add(polyA);
-                newLayerFoldedStates.Add(false);
+                // 핵심: 이 부분이 이전에 접혀있던 부분이라면 계속 접힌 상태로 유지, 아니면 원래 상태 유지
+                newLayerFoldedStates.Add(isAlreadyFolded);
             }
+
+            // PolyB: 잘려서 반대편으로 넘어가는 부분 (접히는 쪽)
             if (flipedPolyB.Count > 2)
             {
                 newVerticesLayers.Add(flipedPolyB);
+
+                // 접혀서 넘어가는 부분은 무조건 '접힘(true)' 상태가 됩니다.
                 newLayerFoldedStates.Add(true);
-                foldingSourceLayers.Add(polyB);      // polyB 저장
+
+                foldingSourceLayers.Add(polyB);
                 flipedVerticesLayers.Add(flipedPolyB);
             }
         }
@@ -261,6 +285,8 @@ public class PaperController : SingletonObject<PaperController>
     }
     private void UpdateMeshes(List<List<Vector2>> verticesLayers, List<bool> layerFolded)
     {
+        Debug.Log($"[메시업데이트] 총 레이어: {verticesLayers.Count}, 메시 오브젝트: {paperMeshObjects.Count}");
+
         // 필요한 만큼 메시 오브젝트 생성
         while (paperMeshObjects.Count < verticesLayers.Count)
         {
@@ -272,16 +298,21 @@ public class PaperController : SingletonObject<PaperController>
 
             if (paperFrontMaterial != null)
                 thisMeshRenderer.material = paperFrontMaterial;
-                
+
             paperMeshObjects.Add(meshObj);
+            Debug.Log($"[메시생성] {meshObj.name} 생성");
         }
+
+        // 접힌 레이어와 접히지 않은 레이어를 분리
+        int foldedLayerCount = 0;
+        int unfoldedLayerCount = 0;
 
         // 메시 업데이트
         for (int i = 0; i < paperMeshObjects.Count; i++)
         {
             GameObject meshObj = paperMeshObjects[i];
             if (meshObj == null) continue;
-            
+
             MeshFilter thisMeshFilter = meshObj.GetComponent<MeshFilter>();
             if (thisMeshFilter == null) continue;
 
@@ -298,17 +329,44 @@ public class PaperController : SingletonObject<PaperController>
 
                 thisMeshFilter.mesh = layerMesh;
                 meshObj.SetActive(true);
-                
+
                 MeshRenderer thisMeshRenderer = meshObj.GetComponent<MeshRenderer>();
                 if (thisMeshRenderer != null)
                 {
                     bool isFolded = i < layerFolded.Count && layerFolded[i];
-                    thisMeshRenderer.material = isFolded ? paperFrontMaterial : paperBackMaterial;
+
+                    // 접힌 레이어는 뒷면(어두운 색), 접히지 않은 레이어는 앞면(밝은 색)
+                    thisMeshRenderer.material = isFolded ? paperBackMaterial : paperFrontMaterial;
+
+                    // Z-order 설정
+                    // 마크는 0 근처에 있으므로, 종이는 뒤로 배치
+                    // 접힌 레이어가 접히지 않은 레이어보다 앞에 있어야 함
+                    float zOffset;
+                    if (isFolded)
+                    {
+                        // 접힌 레이어: -0.5 근처 (마크보다 뒤, 접히지 않은 레이어보다 앞)
+                        zOffset = -0.5f - foldedLayerCount * 0.01f;
+                        foldedLayerCount++;
+                    }
+                    else
+                    {
+                        // 접히지 않은 레이어: -1.0 근처 (가장 뒤)
+                        zOffset = -1.0f - unfoldedLayerCount * 0.01f;
+                        unfoldedLayerCount++;
+                    }
+                    meshObj.transform.localPosition = new Vector3(0, 0, zOffset);
+
+                    // 렌더링 순서도 설정 (2D sorting)
+                    thisMeshRenderer.sortingOrder = isFolded ? 10 + i : 0 + i;
+
+                    Debug.Log($"[메시활성] {meshObj.name} - 접힘:{isFolded}, Z:{zOffset:F3}, Sort:{thisMeshRenderer.sortingOrder}");
                 }
             }
             else
             {
+                // 사용하지 않는 메시는 비활성화
                 meshObj.SetActive(false);
+                Debug.Log($"[메시비활성] {meshObj.name} 비활성화");
             }
         }
     }
@@ -337,7 +395,7 @@ public class PaperController : SingletonObject<PaperController>
             return false;
         return PaperRandomUtility.IsPointInsidePolygons(point, flipedVerticesLayers);
     }
-    
+
     /// <summary>
     /// 접기 확정 후 겹침 판정용
     /// </summary>
@@ -347,7 +405,7 @@ public class PaperController : SingletonObject<PaperController>
             return false;
         return PaperRandomUtility.IsPointInsidePolygons(point, confirmedFlipedVerticesLayers);
     }
-    
+
     /// <summary>
     /// 접기 확정 후 마크의 반사 위치 계산
     /// </summary>
@@ -355,7 +413,7 @@ public class PaperController : SingletonObject<PaperController>
     {
         return ReflectPointAcrossLine(confirmedFoldLinePoint, confirmedFoldLineDirection, originalPosition);
     }
-    
+
     /// <summary>
     /// 드래그 중 실시간 반사 위치 계산
     /// </summary>
@@ -364,7 +422,7 @@ public class PaperController : SingletonObject<PaperController>
         Vector2 midPoint = (pointA + pointB) / 2f;
         Vector2 abDirection = (pointB - pointA).normalized;
         Vector2 foldAxis = new(-abDirection.y, abDirection.x);
-        
+
         return ReflectPointAcrossLine(midPoint, foldAxis, originalPosition);
     }
 

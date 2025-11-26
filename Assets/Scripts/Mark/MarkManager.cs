@@ -5,37 +5,37 @@ using UnityEngine;
 public class MarkManager : SingletonObject<MarkManager>
 {
     public static event Action OnResourceGenerated;
-    
+
     [Header("프리팹")]
     [SerializeField] private GameObject treePrefab;
     [SerializeField] private GameObject axePrefab;
-    
+
     [Header("설정")]
     [SerializeField] private Transform markParentTransform;
     [SerializeField] private float markSize = 0.3f;
     [SerializeField] private float overlapDistance = 1f;
     [SerializeField] private int toolDurability = 3;
-    
+
     [Header("레시피")]
     [SerializeField] private RecipeDatabase recipeDatabase;
-    
+
     [Header("초기 마크 배치")]
     [SerializeField] private int initialTreeCount = 5;
     [SerializeField] private int initialAxeCount = 2;
-    
+
     private List<Mark> allMarks = new List<Mark>();
     private bool isInitialized = false;
-    
+
     private void OnEnable()
     {
         PaperController.OnPaperInitialized += OnPaperReady;
     }
-    
+
     private void OnDisable()
     {
         PaperController.OnPaperInitialized -= OnPaperReady;
     }
-    
+
     private void Start()
     {
         if (PaperController.Instance != null && PaperController.Instance.IsInitialized)
@@ -43,7 +43,7 @@ public class MarkManager : SingletonObject<MarkManager>
             SpawnInitialMarks();
         }
     }
-    
+
     private void OnPaperReady()
     {
         if (!isInitialized)
@@ -51,27 +51,27 @@ public class MarkManager : SingletonObject<MarkManager>
             SpawnInitialMarks();
         }
     }
-    
+
     private void SpawnInitialMarks()
     {
         if (isInitialized) return;
         isInitialized = true;
-        
+
         for (int i = 0; i < initialTreeCount; i++)
         {
             Vector2 pos = PaperController.Instance.GetRandomInternalPoint();
             SpawnMark(treePrefab, pos, MarkType.Tree);
         }
-        
+
         for (int i = 0; i < initialAxeCount; i++)
         {
             Vector2 pos = PaperController.Instance.GetRandomInternalPoint();
             SpawnMark(axePrefab, pos, MarkType.Axe);
         }
-        
+
         Debug.Log($"[마크] 초기 마크 생성 완료 - 나무: {initialTreeCount}, 도끼: {initialAxeCount}");
     }
-    
+
     private void SpawnMark(GameObject prefab, Vector2 position, MarkType type)
     {
         if (prefab == null)
@@ -79,21 +79,21 @@ public class MarkManager : SingletonObject<MarkManager>
             Debug.LogWarning($"[마크] {type} 프리팹이 없습니다.");
             return;
         }
-        
+
         GameObject markObj = Instantiate(prefab, markParentTransform);
         markObj.transform.localPosition = new Vector3(position.x, position.y, 0f);
         markObj.transform.localScale = Vector3.one * markSize;
-        
+
         Mark mark = markObj.GetComponent<Mark>();
         if (mark == null)
             mark = markObj.AddComponent<Mark>();
-        
+
         int durability = type.IsTool() ? toolDurability : 0;
         mark.Initialize(type, durability);
         allMarks.Add(mark);
     }
 
-    // <summary>
+    /// <summary>
     /// 드래그 중 실시간 업데이트
     /// </summary>
     public void UpdateMarkVisibility()
@@ -150,20 +150,23 @@ public class MarkManager : SingletonObject<MarkManager>
 
 
     /// <summary>
-    /// 실시간 겹침 체크 및 아웃라인 표시
+    /// 실시간 겹침 체크 및 아웃라인 표시 + 예상 자원 계산
     /// </summary>
     private void CheckOverlapsAndShowOutlines(List<Mark> foldedMarks, List<Mark> targetMarks)
     {
+        Dictionary<MarkType, int> expectedResources = new Dictionary<MarkType, int>();
+        List<Mark> processedMarks = new List<Mark>();
+
         foreach (Mark folded in foldedMarks)
         {
-            if (folded == null) continue;
+            if (folded == null || processedMarks.Contains(folded)) continue;
 
             // 이미 반사 위치로 이동했으므로 현재 위치 사용
             Vector2 foldedPos = folded.GetPosition();
 
             foreach (Mark target in targetMarks)
             {
-                if (target == null) continue;
+                if (target == null || processedMarks.Contains(target)) continue;
 
                 float distance = Vector2.Distance(foldedPos, target.GetPosition());
 
@@ -175,6 +178,16 @@ public class MarkManager : SingletonObject<MarkManager>
                     {
                         folded.ShowValidOutline();
                         target.ShowValidOutline();
+
+                        // 예상 자원 추가
+                        if (expectedResources.ContainsKey(recipe.result))
+                            expectedResources[recipe.result]++;
+                        else
+                            expectedResources[recipe.result] = 1;
+
+                        processedMarks.Add(folded);
+                        processedMarks.Add(target);
+                        break;
                     }
                     else
                     {
@@ -183,6 +196,13 @@ public class MarkManager : SingletonObject<MarkManager>
                     }
                 }
             }
+        }
+
+        // ExpectUI에 예상 자원 전달
+        ExpectUI expectUI = FindFirstObjectByType<ExpectUI>();
+        if (expectUI != null)
+        {
+            expectUI.UpdateExpectedResources(expectedResources);
         }
     }
 
@@ -199,8 +219,15 @@ public class MarkManager : SingletonObject<MarkManager>
                 mark.SetActive(true);
             }
         }
+
+        // ExpectUI 초기화
+        ExpectUI expectUI = FindFirstObjectByType<ExpectUI>();
+        if (expectUI != null)
+        {
+            expectUI.ClearExpectedResources();
+        }
     }
-    
+
     /// <summary>
     /// 종이 접기 완료 시 호출
     /// </summary>
@@ -208,23 +235,23 @@ public class MarkManager : SingletonObject<MarkManager>
     {
         List<Mark> flippedMarks = new List<Mark>();
         List<Mark> remainingMarks = new List<Mark>();
-        
+
         // 현재 위치 기준으로 분류 (이미 이동된 상태)
         foreach (Mark mark in allMarks)
         {
             if (mark == null) continue;
-            
+
             if (mark.IsFlipped)
                 flippedMarks.Add(mark);
             else
                 remainingMarks.Add(mark);
         }
-        
+
         Debug.Log($"[마크] 접힌 마크: {flippedMarks.Count}, 남은 마크: {remainingMarks.Count}");
-        
+
         // 겹침 판정 및 조합 처리
         bool anyResourceGenerated = ProcessOverlaps(flippedMarks, remainingMarks);
-        
+
         // 모든 마크 위치 확정 및 아웃라인 숨김
         foreach (Mark mark in allMarks)
         {
@@ -234,59 +261,66 @@ public class MarkManager : SingletonObject<MarkManager>
                 mark.SetActive(true);
             }
         }
-        
+
+        // ExpectUI 초기화
+        ExpectUI expectUI = FindFirstObjectByType<ExpectUI>();
+        if (expectUI != null)
+        {
+            expectUI.ClearExpectedResources();
+        }
+
         if (anyResourceGenerated)
         {
             OnResourceGenerated?.Invoke();
             TurnSystem.Instance?.RegisterEffectiveFold();
         }
     }
-    
+
     private bool ProcessOverlaps(List<Mark> flippedMarks, List<Mark> remainingMarks)
     {
         bool anyGenerated = false;
         List<Mark> marksToRemove = new List<Mark>();
-        
+
         foreach (Mark flipped in flippedMarks)
         {
             if (flipped == null || marksToRemove.Contains(flipped)) continue;
-            
+
             foreach (Mark remaining in remainingMarks)
             {
                 if (remaining == null || marksToRemove.Contains(remaining)) continue;
-                
+
                 // 현재 위치로 거리 계산 (이미 반사 위치로 이동됨)
                 float distance = Vector2.Distance(flipped.GetPosition(), remaining.GetPosition());
-                
+
                 if (distance <= overlapDistance)
                 {
                     RecipeData recipe = recipeDatabase?.FindRecipe(flipped.Type, remaining.Type);
-                    
+
                     if (recipe != null)
                     {
                         Debug.Log($"[조합] {flipped.Type} + {remaining.Type} = {recipe.result} (거리: {distance:F2})");
-                        
+
                         InventorySystem.Instance?.AddItem(recipe.result);
                         anyGenerated = true;
-                        
+
                         ProcessMarkAfterCombine(flipped, marksToRemove);
                         ProcessMarkAfterCombine(remaining, marksToRemove);
-                        
+
                         break;
                     }
                 }
             }
         }
-        
+
         foreach (Mark mark in marksToRemove)
         {
             allMarks.Remove(mark);
             Destroy(mark.gameObject);
         }
-        
+
         return anyGenerated;
     }
-    
+
     private void ProcessMarkAfterCombine(Mark mark, List<Mark> marksToRemove)
     {
         if (mark.IsTool)
@@ -307,7 +341,7 @@ public class MarkManager : SingletonObject<MarkManager>
             marksToRemove.Add(mark);
         }
     }
-    
+
     public void ClearAllMarks()
     {
         foreach (Mark mark in allMarks)
