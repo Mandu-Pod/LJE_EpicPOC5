@@ -259,8 +259,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d6e748ca2da90464fb43de8f5e741a9b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _frontMaterial: {fileID: 2100000, guid: d01ab3489ca56e544aafa8b9399113d5, type: 2}
-  _backMaterial: {fileID: 2100000, guid: f3bf0975444cea742b56f34903bc3170, type: 2}
+  _frontMaterial: {fileID: 2100000, guid: 2fb688833f823fc4c9dedb45a2365238, type: 2}
+  _backMaterial: {fileID: 2100000, guid: 2ae076cac32faff4c9d0ba3479615b4e, type: 2}
   _isDebugLogging: 1
 --- !u!114 &1520164283
 MonoBehaviour:
@@ -276,7 +276,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _gridSize: 5
   _cellSize: 1
-  _maxFoldDepth: 3
+  _maxFoldDepth: 10
   _currentFoldCount: 0
   _isDebugLogging: 1
 --- !u!23 &1520164284
@@ -344,6 +344,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ca37870a4ec44bf488e84af0a7a7fe05, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _isDebugLogging: 1
 --- !u!1 &1936666413
 GameObject:
   m_ObjectHideFlags: 0
@@ -353,6 +354,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1936666414}
+  - component: {fileID: 1936666415}
   m_Layer: 0
   m_Name: ==Managers=====
   m_TagString: Untagged
@@ -375,6 +377,23 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1936666415
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1936666413}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d6f3747bbe1d69f47995cc0d14f23c4f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _mainCamera: {fileID: 753959070}
+  _foldingMesh: {fileID: 1520164283}
+  _minDragDistance: 0.5
+  _isDragging: 0
+  _isDebugLogging: 1
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

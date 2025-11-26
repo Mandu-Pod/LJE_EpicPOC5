@@ -1,5 +1,7 @@
-﻿using UnityEngine;
-using Sirenix.OdinInspector;
+﻿using Sirenix.OdinInspector;
+using System.Collections.Generic;
+using UnityEngine;
+using static UnityEngine.Mesh;
 
 /// <summary>FoldingMesh 시각화</summary>
 [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
@@ -14,6 +16,12 @@ public class FoldingMeshRenderer : MonoBehaviour
 
     [TabGroup("Debug")]
     [SerializeField] private bool _isDebugLogging = true;
+
+    [TabGroup("Debug")]
+    [SerializeField] private bool _showVertexGizmos = false;
+
+    [TabGroup("Debug"), ShowIf("_showVertexGizmos"), SuffixLabel("units")]
+    [SerializeField] private float _gizmoSize = 0.1f;
     #endregion
 
     #region Properties
@@ -25,6 +33,7 @@ public class FoldingMeshRenderer : MonoBehaviour
     private MeshFilter _meshFilter;
     private MeshRenderer _meshRenderer;
     private Mesh _mesh;
+    private DynamicMeshData _meshData => _foldingMesh?.GetCurrentMeshData();
     #endregion
 
     #region Unity Lifecycle
@@ -123,83 +132,31 @@ public class FoldingMeshRenderer : MonoBehaviour
     {
         _mesh.Clear();
 
+        if (meshData.Positions.Count == 0)
+            return;
+
         // 정점 데이터
         _mesh.SetVertices(meshData.Positions);
         _mesh.SetUVs(0, meshData.UVs);
 
-        // 색상 초기화 (모든 정점에 기본값)
+        // 색상
         Color[] colors = new Color[meshData.Positions.Count];
         int gridSize = _foldingMesh.GridSize;
 
-        // 기본 색상 설정
         for (int i = 0; i < colors.Length; i++)
         {
-            colors[i] = Color.white;
-        }
-
-        // 삼각형 기반 색상 할당
-        for (int i = 0; i < meshData.Triangles.Count; i += 3)
-        {
-            int idx0 = meshData.Triangles[i];
-            int idx1 = meshData.Triangles[i + 1];
-            int idx2 = meshData.Triangles[i + 2];
-
-            // 인덱스 유효성 검증
-            if (idx0 >= meshData.Positions.Count || idx1 >= meshData.Positions.Count || idx2 >= meshData.Positions.Count)
-            {
-                LogError($"Invalid triangle index: {idx0}, {idx1}, {idx2} (max: {meshData.Positions.Count - 1})");
-                continue;
-            }
-
-            Vector3 pos = meshData.Positions[idx0];
-
-            // 그리드 좌표 역산
+            Vector3 pos = meshData.Positions[i];
             int cellX = Mathf.Clamp(Mathf.FloorToInt(pos.x / _foldingMesh.CellSize), 0, gridSize - 1);
             int cellY = Mathf.Clamp(Mathf.FloorToInt(pos.y / _foldingMesh.CellSize), 0, gridSize - 1);
             int cellIndex = cellY * gridSize + cellX;
-
-            Color cellColor = GetCellColor(cellIndex, gridSize);
-
-            colors[idx0] = cellColor;
-            colors[idx1] = cellColor;
-            colors[idx2] = cellColor;
+            colors[i] = GetCellColor(cellIndex, gridSize);
         }
-
         _mesh.SetColors(colors);
 
-        // 서브메시 분리 (앞면/뒷면)
+        // 활성 삼각형만 가져오기
+        _foldingMesh.GetActiveTriangles(out List<int> frontTriangles, out List<int> backTriangles);
+
         _mesh.subMeshCount = 2;
-
-        var frontTriangles = new System.Collections.Generic.List<int>();
-        var backTriangles = new System.Collections.Generic.List<int>();
-
-        for (int i = 0; i < meshData.Triangles.Count; i += 3)
-        {
-            int vertIndex = meshData.Triangles[i];
-
-            // 인덱스 유효성 재검증
-            if (vertIndex >= meshData.FrontFaces.Count)
-            {
-                LogError($"Invalid FrontFaces index: {vertIndex} (max: {meshData.FrontFaces.Count - 1})");
-                continue;
-            }
-
-            bool isFront = meshData.FrontFaces[vertIndex];
-
-            if (isFront)
-            {
-                frontTriangles.Add(meshData.Triangles[i]);
-                frontTriangles.Add(meshData.Triangles[i + 1]);
-                frontTriangles.Add(meshData.Triangles[i + 2]);
-            }
-            else
-            {
-                backTriangles.Add(meshData.Triangles[i]);
-                backTriangles.Add(meshData.Triangles[i + 1]);
-                backTriangles.Add(meshData.Triangles[i + 2]);
-            }
-        }
-
         _mesh.SetTriangles(frontTriangles, 0);
         _mesh.SetTriangles(backTriangles, 1);
 
@@ -217,6 +174,61 @@ public class FoldingMeshRenderer : MonoBehaviour
     }
     #endregion
 
+    #region Debug - Gizmos
+    private void OnDrawGizmos()
+    {
+        if (!_showVertexGizmos || _foldingMesh == null || _meshData == null)
+            return;
+
+        DrawVertexGizmos();
+    }
+
+    private void OnDrawGizmosSelected()
+    {
+        if (!_showVertexGizmos || _foldingMesh == null)
+            return;
+
+        // 그리드 경계 표시
+        DrawGridBounds();
+    }
+
+    private void DrawVertexGizmos()
+    {
+        DynamicMeshData meshData = _foldingMesh.GetCurrentMeshData();
+        if (meshData == null || meshData.Positions.Count == 0)
+            return;
+
+        Vector3 offset = _foldingMesh.MeshOriginOffset;
+
+        for (int i = 0; i < meshData.Positions.Count; i++)
+        {
+            Vector3 worldPos = meshData.Positions[i] + offset;
+            bool isFront = i < meshData.FrontFaces.Count && meshData.FrontFaces[i];
+
+            Gizmos.color = isFront ? Color.red : Color.cyan;
+            Gizmos.DrawSphere(worldPos, _gizmoSize);
+        }
+    }
+
+    private void DrawGridBounds()
+    {
+        Vector3 offset = _foldingMesh.MeshOriginOffset;
+        float size = _foldingMesh.GridWorldSize;
+
+        Gizmos.color = Color.yellow;
+
+        // 그리드 외곽선
+        Vector3 bl = offset;
+        Vector3 br = offset + new Vector3(size, 0, 0);
+        Vector3 tr = offset + new Vector3(size, size, 0);
+        Vector3 tl = offset + new Vector3(0, size, 0);
+
+        Gizmos.DrawLine(bl, br);
+        Gizmos.DrawLine(br, tr);
+        Gizmos.DrawLine(tr, tl);
+        Gizmos.DrawLine(tl, bl);
+    }
+    #endregion
     #region Private Methods - Logging
     private void Log(string msg, bool forcely = false)
     {

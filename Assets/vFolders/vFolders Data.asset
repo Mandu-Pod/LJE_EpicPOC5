@@ -15,10 +15,16 @@ MonoBehaviour:
   folderDatas_byGuid:
     keys:
     - 4b156f8d490cd3d4c9d53196e324d820
+    - 2deb95f82f8df43499450af5db6e41dd
     values:
     - iconNameOrGuid: cs Script Icon
       colorIndex: 4
       isIconRecursive: 1
       isColorRecursive: 1
+    - iconNameOrGuid: 
+      colorIndex: 8
+      isIconRecursive: 0
+      isColorRecursive: 1
   bookmarks:
   - guid: 313cd5898faa9eb40afa4bccc0dc0031
+  - guid: e3f68d6e3fab99d4999b5695f828348e

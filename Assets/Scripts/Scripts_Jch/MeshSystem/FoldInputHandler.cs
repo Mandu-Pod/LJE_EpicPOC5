@@ -8,6 +8,9 @@ public class FoldInputHandler : MonoBehaviour
     [TabGroup("Setup"), Required]
     [SerializeField] private Camera _mainCamera;
 
+    [TabGroup("Setup"), Required]
+    [SerializeField] private FoldingMesh _foldingMesh;
+
     [TabGroup("Setup"), SuffixLabel("units")]
     [SerializeField] private float _minDragDistance = 0.5f;
 
@@ -23,7 +26,7 @@ public class FoldInputHandler : MonoBehaviour
     #endregion
 
     #region Private Fields
-    private FoldingMesh _foldingMesh;
+    
     private Vector2 _dragStartWorld;
     private Vector2 _dragCurrentWorld;
     #endregion
@@ -118,17 +121,21 @@ public class FoldInputHandler : MonoBehaviour
             return;
         }
 
-        Vector2 foldDirection = CalculateFoldDirection(_dragStartWorld, _dragCurrentWorld);
+        // 월드 → 그리드 좌표 변환
+        Vector2 gridStart = _foldingMesh.WorldToGridPosition(_dragStartWorld);
+        Vector2 gridEnd = _foldingMesh.WorldToGridPosition(_dragCurrentWorld);
 
-        bool success = _foldingMesh.TryFold(_dragStartWorld, _dragCurrentWorld, foldDirection);
+        Vector2 foldDirection = CalculateFoldDirection(gridStart, gridEnd);
+
+        bool success = _foldingMesh.TryFold(gridStart, gridEnd, foldDirection);
 
         if (success)
         {
-            Log($"Fold executed: {_dragStartWorld} → {_dragCurrentWorld}, direction {foldDirection}", true);
+            Log($"Fold executed: World({_dragStartWorld} → {_dragCurrentWorld}) Grid({gridStart} → {gridEnd})", true);
         }
         else
         {
-            LogWarning("Fold failed");
+            LogWarning($"Fold failed: Grid({gridStart} → {gridEnd})");
         }
 
         _isDragging = false;
