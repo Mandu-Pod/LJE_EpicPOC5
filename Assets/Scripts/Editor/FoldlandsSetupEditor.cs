@@ -2,6 +2,7 @@
 using UnityEditor;
 using System.IO;
 using TMPro;
+using UnityEngine.UI;
 
 public class FoldlandsSetupEditor : EditorWindow
 {
@@ -67,25 +68,35 @@ public class FoldlandsSetupEditor : EditorWindow
     {
         CreateFolders();
 
-        // 종이 앞면 머티리얼
+        // 종이 앞면
         Material frontMat = new Material(Shader.Find("Sprites/Default"));
-        frontMat.color = new Color(0.95f, 0.9f, 0.8f); // 연한 베이지
+        frontMat.color = new Color(0.95f, 0.9f, 0.8f);
         AssetDatabase.CreateAsset(frontMat, "Assets/Foldlands/Materials/PaperFront.mat");
 
-        // 종이 뒷면 머티리얼
+        // 종이 뒷면
         Material backMat = new Material(Shader.Find("Sprites/Default"));
-        backMat.color = new Color(0.8f, 0.75f, 0.65f); // 어두운 베이지
+        backMat.color = new Color(0.8f, 0.75f, 0.65f);
         AssetDatabase.CreateAsset(backMat, "Assets/Foldlands/Materials/PaperBack.mat");
 
-        // 나무 마크 머티리얼
+        // 나무 마크
         Material treeMat = new Material(Shader.Find("Sprites/Default"));
-        treeMat.color = new Color(0.2f, 0.6f, 0.2f); // 초록
+        treeMat.color = new Color(0.2f, 0.6f, 0.2f);
         AssetDatabase.CreateAsset(treeMat, "Assets/Foldlands/Materials/TreeMark.mat");
 
-        // 도끼 마크 머티리얼
-        Material axeMat = new Material(Shader.Find("Sprites/Default"));
-        axeMat.color = new Color(0.6f, 0.4f, 0.2f); // 갈색
-        AssetDatabase.CreateAsset(axeMat, "Assets/Foldlands/Materials/AxeMark.mat");
+        // 돌 마크
+        Material stoneMat = new Material(Shader.Find("Sprites/Default"));
+        stoneMat.color = new Color(0.5f, 0.5f, 0.5f);
+        AssetDatabase.CreateAsset(stoneMat, "Assets/Foldlands/Materials/StoneMark.mat");
+
+        // 식량 마크
+        Material foodMat = new Material(Shader.Find("Sprites/Default"));
+        foodMat.color = new Color(0.9f, 0.7f, 0.3f);
+        AssetDatabase.CreateAsset(foodMat, "Assets/Foldlands/Materials/FoodMark.mat");
+
+        // 인구 마크
+        Material personMat = new Material(Shader.Find("Sprites/Default"));
+        personMat.color = new Color(0.3f, 0.5f, 0.9f);
+        AssetDatabase.CreateAsset(personMat, "Assets/Foldlands/Materials/PersonMark.mat");
 
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
@@ -98,15 +109,25 @@ public class FoldlandsSetupEditor : EditorWindow
         CreateFolders();
         CreateMaterials();
 
-        // 나무 프리팹
+        // 나무
         GameObject treeObj = CreateMarkObject("TreeMark", "Assets/Foldlands/Materials/TreeMark.mat");
         PrefabUtility.SaveAsPrefabAsset(treeObj, "Assets/Foldlands/Prefabs/TreeMark.prefab");
         Object.DestroyImmediate(treeObj);
 
-        // 도끼 프리팹
-        GameObject axeObj = CreateMarkObject("AxeMark", "Assets/Foldlands/Materials/AxeMark.mat");
-        PrefabUtility.SaveAsPrefabAsset(axeObj, "Assets/Foldlands/Prefabs/AxeMark.prefab");
-        Object.DestroyImmediate(axeObj);
+        // 돌
+        GameObject stoneObj = CreateMarkObject("StoneMark", "Assets/Foldlands/Materials/StoneMark.mat");
+        PrefabUtility.SaveAsPrefabAsset(stoneObj, "Assets/Foldlands/Prefabs/StoneMark.prefab");
+        Object.DestroyImmediate(stoneObj);
+
+        // 식량
+        GameObject foodObj = CreateMarkObject("FoodMark", "Assets/Foldlands/Materials/FoodMark.mat");
+        PrefabUtility.SaveAsPrefabAsset(foodObj, "Assets/Foldlands/Prefabs/FoodMark.prefab");
+        Object.DestroyImmediate(foodObj);
+
+        // 인구
+        GameObject personObj = CreateMarkObject("PersonMark", "Assets/Foldlands/Materials/PersonMark.mat");
+        PrefabUtility.SaveAsPrefabAsset(personObj, "Assets/Foldlands/Prefabs/PersonMark.prefab");
+        Object.DestroyImmediate(personObj);
 
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
@@ -117,7 +138,6 @@ public class FoldlandsSetupEditor : EditorWindow
     {
         GameObject obj = new GameObject(name);
 
-        // 스프라이트 렌더러 추가 (원형 표시)
         SpriteRenderer sr = obj.AddComponent<SpriteRenderer>();
         sr.sprite = CreateCircleSprite();
 
@@ -128,7 +148,6 @@ public class FoldlandsSetupEditor : EditorWindow
             sr.color = mat.color;
         }
 
-        // Mark 컴포넌트 추가
         obj.AddComponent<Mark>();
 
         return obj;
@@ -136,12 +155,10 @@ public class FoldlandsSetupEditor : EditorWindow
 
     private static Sprite CreateCircleSprite()
     {
-        // 기본 원형 스프라이트 생성
         string spritePath = "Assets/Foldlands/Sprites/Circle.png";
 
         if (!File.Exists(spritePath))
         {
-            // 32x32 원형 텍스처 생성
             int size = 32;
             Texture2D tex = new Texture2D(size, size);
             Color[] pixels = new Color[size * size];
@@ -165,7 +182,6 @@ public class FoldlandsSetupEditor : EditorWindow
             File.WriteAllBytes(spritePath, pngData);
             AssetDatabase.Refresh();
 
-            // 텍스처 임포트 설정
             TextureImporter importer = AssetImporter.GetAtPath(spritePath) as TextureImporter;
             if (importer != null)
             {
@@ -184,17 +200,17 @@ public class FoldlandsSetupEditor : EditorWindow
     {
         CreateFolders();
 
-        // 나무 + 도끼 = 목재 레시피
-        RecipeData treeAxeRecipe = ScriptableObject.CreateInstance<RecipeData>();
-        treeAxeRecipe.ingredient1 = MarkType.Tree;
-        treeAxeRecipe.ingredient2 = MarkType.Axe;
-        treeAxeRecipe.result = MarkType.Wood;
-        treeAxeRecipe.description = "나무를 도끼로 베어 목재를 얻습니다.";
-        AssetDatabase.CreateAsset(treeAxeRecipe, "Assets/Foldlands/ScriptableObjects/Recipe_TreeAxe.asset");
+        // 나무 + 사람 = 목재
+        RecipeData treePersonRecipe = ScriptableObject.CreateInstance<RecipeData>();
+        treePersonRecipe.ingredient1 = MarkType.Tree;
+        treePersonRecipe.ingredient2 = MarkType.Person;
+        treePersonRecipe.result = MarkType.Wood;
+        treePersonRecipe.description = "나무를 사람이 베어 목재를 얻습니다.";
+        AssetDatabase.CreateAsset(treePersonRecipe, "Assets/Foldlands/ScriptableObjects/Recipe_TreePerson.asset");
 
         // 레시피 데이터베이스
         RecipeDatabase database = ScriptableObject.CreateInstance<RecipeDatabase>();
-        database.recipes.Add(treeAxeRecipe);
+        database.recipes.Add(treePersonRecipe);
         AssetDatabase.CreateAsset(database, "Assets/Foldlands/ScriptableObjects/RecipeDatabase.asset");
 
         AssetDatabase.SaveAssets();
@@ -205,42 +221,39 @@ public class FoldlandsSetupEditor : EditorWindow
     [MenuItem(MENU_PATH + "5. 매니저 오브젝트 생성")]
     public static void CreateManagers()
     {
-        // 기존 매니저들 확인 및 제거
         DestroyExistingManager<GameManager>();
         DestroyExistingManager<TurnSystem>();
         DestroyExistingManager<PopulationManager>();
         DestroyExistingManager<InventorySystem>();
         DestroyExistingManager<MarkManager>();
 
-        // GameManager
         GameObject gameManagerObj = new GameObject("GameManager");
         gameManagerObj.AddComponent<GameManager>();
 
-        // TurnSystem
         GameObject turnSystemObj = new GameObject("TurnSystem");
         turnSystemObj.AddComponent<TurnSystem>();
 
-        // PopulationManager
         GameObject populationObj = new GameObject("PopulationManager");
         populationObj.AddComponent<PopulationManager>();
 
-        // InventorySystem
         GameObject inventoryObj = new GameObject("InventorySystem");
         inventoryObj.AddComponent<InventorySystem>();
 
-        // MarkManager
         GameObject markManagerObj = new GameObject("MarkManager");
         MarkManager markManager = markManagerObj.AddComponent<MarkManager>();
 
-        // MarkManager에 프리팹/데이터 연결
         SerializedObject markManagerSO = new SerializedObject(markManager);
 
         GameObject treePrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Foldlands/Prefabs/TreeMark.prefab");
-        GameObject axePrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Foldlands/Prefabs/AxeMark.prefab");
+        GameObject stonePrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Foldlands/Prefabs/StoneMark.prefab");
+        GameObject foodPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Foldlands/Prefabs/FoodMark.prefab");
+        GameObject personPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Foldlands/Prefabs/PersonMark.prefab");
         RecipeDatabase recipeDB = AssetDatabase.LoadAssetAtPath<RecipeDatabase>("Assets/Foldlands/ScriptableObjects/RecipeDatabase.asset");
 
         markManagerSO.FindProperty("treePrefab").objectReferenceValue = treePrefab;
-        markManagerSO.FindProperty("axePrefab").objectReferenceValue = axePrefab;
+        markManagerSO.FindProperty("stonePrefab").objectReferenceValue = stonePrefab;
+        markManagerSO.FindProperty("foodPrefab").objectReferenceValue = foodPrefab;
+        markManagerSO.FindProperty("personPrefab").objectReferenceValue = personPrefab;
         markManagerSO.FindProperty("recipeDatabase").objectReferenceValue = recipeDB;
         markManagerSO.ApplyModifiedProperties();
 
@@ -250,22 +263,17 @@ public class FoldlandsSetupEditor : EditorWindow
     [MenuItem(MENU_PATH + "6. 종이 오브젝트 생성")]
     public static void CreatePaper()
     {
-        // 기존 PaperController 제거
         DestroyExistingManager<PaperController>();
 
-        // Paper 루트 오브젝트
         GameObject paperRoot = new GameObject("Paper");
         PaperController paperController = paperRoot.AddComponent<PaperController>();
 
-        // MeshTransform (종이 메시용 자식 오브젝트)
         GameObject meshTransform = new GameObject("MeshTransform");
         meshTransform.transform.parent = paperRoot.transform;
 
-        // MarkTransform (마크용 별도 자식 오브젝트)
         GameObject markTransform = new GameObject("MarkTransform");
         markTransform.transform.parent = paperRoot.transform;
 
-        // PaperController 설정
         SerializedObject paperSO = new SerializedObject(paperController);
 
         Material frontMat = AssetDatabase.LoadAssetAtPath<Material>("Assets/Foldlands/Materials/PaperFront.mat");
@@ -280,7 +288,6 @@ public class FoldlandsSetupEditor : EditorWindow
         paperSO.FindProperty("tokenizeThreshold").floatValue = 0.1f;
         paperSO.ApplyModifiedProperties();
 
-        // MarkManager에 markParentTransform 연결 (별도 오브젝트)
         MarkManager markManager = Object.FindFirstObjectByType<MarkManager>();
         if (markManager != null)
         {
@@ -295,49 +302,44 @@ public class FoldlandsSetupEditor : EditorWindow
     [MenuItem(MENU_PATH + "7. UI 캔버스 생성")]
     public static void CreateUI()
     {
-        // 기존 UIManager 제거
         DestroyExistingManager<UIManager>();
 
-        // Canvas 생성
         GameObject canvasObj = new GameObject("FoldlandsCanvas");
         Canvas canvas = canvasObj.AddComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
         canvasObj.AddComponent<UnityEngine.UI.CanvasScaler>();
         canvasObj.AddComponent<UnityEngine.UI.GraphicRaycaster>();
 
-        // UIManager 추가
         UIManager uiManager = canvasObj.AddComponent<UIManager>();
 
         // ========== 좌측 상단: 생존 정보 ==========
         GameObject survivalPanel = CreatePanel("SurvivalPanel", canvasObj.transform,
-            new Vector2(0, 1), new Vector2(0, 1), new Vector2(10, -10), new Vector2(200, 150));
+            new Vector2(0, 1), new Vector2(0, 1), new Vector2(10, -10), new Vector2(200, 180));
         SurvivalUI survivalUI = survivalPanel.AddComponent<SurvivalUI>();
 
-        // Day 텍스트
         GameObject dayTextObj = CreateTextMeshPro("DayText", survivalPanel.transform,
             new Vector2(0, 1), new Vector2(0, 1), new Vector2(10, -10), new Vector2(180, 30), "Day 1", 24);
 
-        // Fold Count 텍스트
         GameObject foldTextObj = CreateTextMeshPro("FoldCountText", survivalPanel.transform,
-            new Vector2(0, 1), new Vector2(0, 1), new Vector2(10, -40), new Vector2(180, 25), "접기: 0/3", 18);
+            new Vector2(0, 1), new Vector2(0, 1), new Vector2(10, -40), new Vector2(180, 25), "Fold: 0/3", 18);
 
-        // Population 텍스트
-        GameObject popTextObj = CreateTextMeshPro("PopulationText", survivalPanel.transform,
-            new Vector2(0, 1), new Vector2(0, 1), new Vector2(10, -70), new Vector2(180, 25), "👥 3", 18);
+        GameObject totalPopTextObj = CreateTextMeshPro("TotalPopulationText", survivalPanel.transform,
+            new Vector2(0, 1), new Vector2(0, 1), new Vector2(10, -70), new Vector2(180, 25), "Total Pop: 10", 18);
 
-        // Food 텍스트
+        GameObject activePopTextObj = CreateTextMeshPro("ActivePopulationText", survivalPanel.transform,
+            new Vector2(0, 1), new Vector2(0, 1), new Vector2(10, -100), new Vector2(180, 25), "Active Pop: 0", 18);
+
         GameObject foodTextObj = CreateTextMeshPro("FoodText", survivalPanel.transform,
-            new Vector2(0, 1), new Vector2(0, 1), new Vector2(10, -100), new Vector2(180, 25), "🍖 30", 18);
+            new Vector2(0, 1), new Vector2(0, 1), new Vector2(10, -130), new Vector2(180, 25), "Food: 30", 18);
 
-        // Paper Area 텍스트
         GameObject areaTextObj = CreateTextMeshPro("PaperAreaText", survivalPanel.transform,
-            new Vector2(0, 1), new Vector2(0, 1), new Vector2(10, -130), new Vector2(180, 25), "📄 100%", 18);
+            new Vector2(0, 1), new Vector2(0, 1), new Vector2(10, -160), new Vector2(180, 25), "Paper: 100%", 18);
 
-        // SurvivalUI 연결
         SerializedObject survivalSO = new SerializedObject(survivalUI);
         survivalSO.FindProperty("dayText").objectReferenceValue = dayTextObj.GetComponent<TextMeshProUGUI>();
         survivalSO.FindProperty("foldCountText").objectReferenceValue = foldTextObj.GetComponent<TextMeshProUGUI>();
-        survivalSO.FindProperty("populationText").objectReferenceValue = popTextObj.GetComponent<TextMeshProUGUI>();
+        survivalSO.FindProperty("totalPopulationText").objectReferenceValue = totalPopTextObj.GetComponent<TextMeshProUGUI>();
+        survivalSO.FindProperty("activePopulationText").objectReferenceValue = activePopTextObj.GetComponent<TextMeshProUGUI>();
         survivalSO.FindProperty("foodText").objectReferenceValue = foodTextObj.GetComponent<TextMeshProUGUI>();
         survivalSO.FindProperty("paperAreaText").objectReferenceValue = areaTextObj.GetComponent<TextMeshProUGUI>();
         survivalSO.ApplyModifiedProperties();
@@ -347,11 +349,9 @@ public class FoldlandsSetupEditor : EditorWindow
             new Vector2(1, 1), new Vector2(1, 1), new Vector2(-10, -10), new Vector2(200, 150));
         InventoryUI inventoryUI = inventoryPanel.AddComponent<InventoryUI>();
 
-        // Inventory 텍스트
         GameObject invTextObj = CreateTextMeshPro("InventoryText", inventoryPanel.transform,
             new Vector2(0, 1), new Vector2(0, 1), new Vector2(10, -10), new Vector2(180, 130), "<b>인벤토리</b>\n(비어있음)", 16);
 
-        // InventoryUI 연결
         SerializedObject invSO = new SerializedObject(inventoryUI);
         invSO.FindProperty("inventoryText").objectReferenceValue = invTextObj.GetComponent<TextMeshProUGUI>();
         invSO.ApplyModifiedProperties();
@@ -361,17 +361,52 @@ public class FoldlandsSetupEditor : EditorWindow
             new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 10), new Vector2(250, 120));
         ExpectUI expectUI = expectPanel.AddComponent<ExpectUI>();
 
-        // Expect 텍스트
         GameObject expectTextObj = CreateTextMeshPro("ExpectText", expectPanel.transform,
             new Vector2(0, 1), new Vector2(0, 1), new Vector2(10, -10), new Vector2(230, 100), "<b>예상 획득 자원</b>\n(없음)", 16);
 
-        // ExpectUI 연결
         SerializedObject expectSO = new SerializedObject(expectUI);
         expectSO.FindProperty("expectText").objectReferenceValue = expectTextObj.GetComponent<TextMeshProUGUI>();
         expectSO.FindProperty("expectPanel").objectReferenceValue = expectPanel;
         expectSO.ApplyModifiedProperties();
 
-        expectPanel.SetActive(false); // 초기에는 숨김
+        expectPanel.SetActive(false);
+
+        // ========== 중앙: 인구 선택 UI ==========
+        GameObject popSelectPanel = CreatePanel("PopulationSelectPanel", canvasObj.transform,
+            new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(300, 200));
+        popSelectPanel.GetComponent<UnityEngine.UI.Image>().color = new Color(0.1f, 0.1f, 0.1f, 0.9f);
+        PopulationSelectUI popSelectUI = popSelectPanel.AddComponent<PopulationSelectUI>();
+
+        GameObject availablePopTextObj = CreateTextMeshPro("AvailablePopulationText", popSelectPanel.transform,
+            new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -20), new Vector2(260, 30), "사용 가능 인구: 10명", 18);
+        availablePopTextObj.GetComponent<TextMeshProUGUI>().alignment = TextAlignmentOptions.Center;
+
+        // 버튼들 (-, 숫자, +)
+        GameObject buttonRow = new GameObject("ButtonRow");
+        buttonRow.transform.SetParent(popSelectPanel.transform);
+        RectTransform buttonRowRect = buttonRow.AddComponent<RectTransform>();
+        buttonRowRect.anchorMin = new Vector2(0.5f, 0.5f);
+        buttonRowRect.anchorMax = new Vector2(0.5f, 0.5f);
+        buttonRowRect.pivot = new Vector2(0.5f, 0.5f);
+        buttonRowRect.anchoredPosition = Vector2.zero;
+        buttonRowRect.sizeDelta = new Vector2(200, 50);
+
+        GameObject decreaseBtn = CreateButton("DecreaseButton", buttonRow.transform, new Vector2(-80, 0), new Vector2(50, 50), "-", 24);
+        GameObject countTextObj = CreateTextMeshPro("SelectedCountText", buttonRow.transform,
+            new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(60, 50), "1", 32);
+        countTextObj.GetComponent<TextMeshProUGUI>().alignment = TextAlignmentOptions.Center;
+        GameObject increaseBtn = CreateButton("IncreaseButton", buttonRow.transform, new Vector2(80, 0), new Vector2(50, 50), "+", 24);
+
+        GameObject confirmBtn = CreateButton("ConfirmButton", popSelectPanel.transform, new Vector2(0, -60), new Vector2(120, 40), "확정", 18);
+
+        SerializedObject popSelectSO = new SerializedObject(popSelectUI);
+        popSelectSO.FindProperty("panel").objectReferenceValue = popSelectPanel;
+        popSelectSO.FindProperty("availablePopulationText").objectReferenceValue = availablePopTextObj.GetComponent<TextMeshProUGUI>();
+        popSelectSO.FindProperty("selectedCountText").objectReferenceValue = countTextObj.GetComponent<TextMeshProUGUI>();
+        popSelectSO.FindProperty("decreaseButton").objectReferenceValue = decreaseBtn.GetComponent<Button>();
+        popSelectSO.FindProperty("increaseButton").objectReferenceValue = increaseBtn.GetComponent<Button>();
+        popSelectSO.FindProperty("confirmButton").objectReferenceValue = confirmBtn.GetComponent<Button>();
+        popSelectSO.ApplyModifiedProperties();
 
         // ========== 게임오버 패널 ==========
         GameObject gameOverPanel = CreatePanel("GameOverPanel", canvasObj.transform,
@@ -383,7 +418,6 @@ public class FoldlandsSetupEditor : EditorWindow
             new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(280, 180), "게임 오버\n\n생존 일수: 0일", 28);
         gameOverTextObj.GetComponent<TextMeshProUGUI>().alignment = TextAlignmentOptions.Center;
 
-        // UIManager 연결
         SerializedObject uiSO = new SerializedObject(uiManager);
         uiSO.FindProperty("gameOverPanel").objectReferenceValue = gameOverPanel;
         uiSO.FindProperty("gameOverText").objectReferenceValue = gameOverTextObj.GetComponent<TextMeshProUGUI>();
@@ -429,6 +463,39 @@ public class FoldlandsSetupEditor : EditorWindow
         tmp.alignment = TextAlignmentOptions.TopLeft;
 
         return textObj;
+    }
+
+    private static GameObject CreateButton(string name, Transform parent, Vector2 anchoredPos, Vector2 size, string text, int fontSize)
+    {
+        GameObject btnObj = new GameObject(name);
+        btnObj.transform.SetParent(parent);
+
+        RectTransform rect = btnObj.AddComponent<RectTransform>();
+        rect.anchorMin = new Vector2(0.5f, 0.5f);
+        rect.anchorMax = new Vector2(0.5f, 0.5f);
+        rect.pivot = new Vector2(0.5f, 0.5f);
+        rect.anchoredPosition = anchoredPos;
+        rect.sizeDelta = size;
+
+        UnityEngine.UI.Image image = btnObj.AddComponent<UnityEngine.UI.Image>();
+        image.color = new Color(0.3f, 0.3f, 0.3f, 1f);
+
+        Button button = btnObj.AddComponent<Button>();
+
+        GameObject textObj = new GameObject("Text");
+        textObj.transform.SetParent(btnObj.transform);
+        RectTransform textRect = textObj.AddComponent<RectTransform>();
+        textRect.anchorMin = Vector2.zero;
+        textRect.anchorMax = Vector2.one;
+        textRect.sizeDelta = Vector2.zero;
+
+        TextMeshProUGUI tmp = textObj.AddComponent<TextMeshProUGUI>();
+        tmp.text = text;
+        tmp.fontSize = fontSize;
+        tmp.color = Color.white;
+        tmp.alignment = TextAlignmentOptions.Center;
+
+        return btnObj;
     }
 
     private static void DestroyExistingManager<T>() where T : MonoBehaviour

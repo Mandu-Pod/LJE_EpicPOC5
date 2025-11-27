@@ -2,24 +2,29 @@
 {
     // 자원 마크 (채집 대상)
     Tree,       // 나무
-    
+    Stone,      // 돌
+
     // 결과물 마크 (인벤토리 아이템)
     Wood,       // 목재
-    
-    // 도구 마크
-    Axe,        // 도끼
-    Pickaxe,    // 곡괭이 (확장용)
+    Food,       // 식량
 
-    //Coin
-    Token,      // 토큰 (화폐)
+    // 인구 마크
+    Person,     // 사람
 
+    Coin,       // 화폐 (토큰)
+}
+
+public enum PaperType
+{
+    Forest,     // 숲 - 나무(3-5), 돌(1-2), 식량(0-1)
+    Plains,     // 평지 - 나무(0-1), 돌(1-2), 식량(3-5)
 }
 
 public enum MarkCategory
 {
-    Resource,   // 자원 (나무, 바위 등)
-    Product,    // 결과물 (목재, 돌 등)
-    Tool,       // 도구 (도끼, 곡괭이 등)
+    Resource,   // 자원 (나무, 돌 등)
+    Product,    // 결과물 (목재, 식량 등)
+    Person,     // 인구
     Coin,       // 화폐 (토큰 등)
 }
 
@@ -33,21 +38,15 @@ public static class MarkTypeExtensions
         return type switch
         {
             MarkType.Tree => MarkCategory.Resource,
+            MarkType.Stone => MarkCategory.Resource,
             MarkType.Wood => MarkCategory.Product,
-            MarkType.Axe => MarkCategory.Tool,
-            MarkType.Pickaxe => MarkCategory.Tool,
+            MarkType.Food => MarkCategory.Product,
+            MarkType.Person => MarkCategory.Person,
+            MarkType.Coin => MarkCategory.Coin,
             _ => MarkCategory.Coin
         };
     }
-    
-    /// <summary>
-    /// 도구인지 여부
-    /// </summary>
-    public static bool IsTool(this MarkType type)
-    {
-        return type.GetCategory() == MarkCategory.Tool;
-    }
-    
+
     /// <summary>
     /// 자원인지 여부
     /// </summary>
@@ -55,12 +54,20 @@ public static class MarkTypeExtensions
     {
         return type.GetCategory() == MarkCategory.Resource;
     }
-    
+
     /// <summary>
     /// 결과물인지 여부
     /// </summary>
     public static bool IsProduct(this MarkType type)
     {
         return type.GetCategory() == MarkCategory.Product;
+    }
+
+    /// <summary>
+    /// 인구인지 여부
+    /// </summary>
+    public static bool IsPerson(this MarkType type)
+    {
+        return type.GetCategory() == MarkCategory.Person;
     }
 }
