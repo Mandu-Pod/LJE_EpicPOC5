@@ -1,6 +1,8 @@
 using System;
 using UnityEngine;
 
+// [비활성화] 전투 시스템으로 전환으로 인해 비활성화됨
+/*
 public class PopulationManager : SingletonObject<PopulationManager>
 {
     public static event Action OnPopulationChanged;
@@ -80,3 +82,4 @@ public class PopulationManager : SingletonObject<PopulationManager>
         OnFoodChanged?.Invoke();
     }
 }
+*/

@@ -1,6 +1,9 @@
 using TMPro;
 using UnityEngine;
 
+// [비활성화] 전투 시스템으로 전환으로 인해 비활성화됨
+// 생존 시스템(PopulationManager, TurnSystem)을 사용하지 않으므로 이 UI도 필요 없음
+/*
 public class SurvivalUI : MonoBehaviour
 {
     [Header("UI 요소")]
@@ -69,3 +72,4 @@ public class SurvivalUI : MonoBehaviour
         }
     }
 }
+*/

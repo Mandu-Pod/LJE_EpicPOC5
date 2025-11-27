@@ -1,6 +1,8 @@
 using System;
 using UnityEngine;
 
+// [비활성화] 전투 시스템으로 전환으로 인해 비활성화됨
+/*
 public class TurnSystem : SingletonObject<TurnSystem>
 {
     public static event Action OnDayPassed;
@@ -39,3 +41,4 @@ public class TurnSystem : SingletonObject<TurnSystem>
         OnDayPassed?.Invoke();
     }
 }
+*/

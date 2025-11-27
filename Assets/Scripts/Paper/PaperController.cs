@@ -18,6 +18,8 @@ public class PaperController : SingletonObject<PaperController>
 
     [Header("토큰화 설정")]
     [SerializeField] private float tokenizeThreshold = 0.1f;
+    [SerializeField] private bool enableAutoReset = true; // 자동 초기화 활성화/비활성화
+    [Tooltip("활성화 시: 토큰화되면 1초 후 새 종이 생성 | 비활성화 시: 토큰화 후 종이 초기화 안 함")]
 
     private Mesh paperMesh;
     private string paperName = "PaperMesh";
@@ -83,7 +85,7 @@ public class PaperController : SingletonObject<PaperController>
         isInitialized = true;
         Debug.Log($"[종이] 초기 면적: {initialArea}");
         OnPaperInitialized?.Invoke();
-        OnPaperFolded?.Invoke();
+        // OnPaperFolded는 실제로 종이를 접을 때만 호출되어야 함
     }
 
     void CreateSquareMesh()
@@ -152,6 +154,7 @@ public class PaperController : SingletonObject<PaperController>
             Debug.Log($"[접기취소] 현재 레이어 수: {currentVerticesLayers.Count}");
             UpdateMeshes(currentVerticesLayers, currentLayerFoldedStates);
             MarkManager.Instance?.RestoreMarkVisibility();
+            CombatManager.Instance?.RestoreUnitPositions();
         }
 
         // 좌클릭 시작
@@ -191,6 +194,7 @@ public class PaperController : SingletonObject<PaperController>
                     UpdateMeshes(currentVerticesLayers, currentLayerFoldedStates);
 
                     MarkManager.Instance?.ProcessFold();
+                    CombatManager.Instance?.ConfirmUnitPositions();
 
                     OnPaperFolded?.Invoke();
                     CheckTokenize();
@@ -202,6 +206,11 @@ public class PaperController : SingletonObject<PaperController>
         {
             UpdatePaperVisuals();
             MarkManager.Instance?.UpdateMarkVisibility();
+
+            // 유닛 업데이트 전에 foldingSourceLayers 상태 로그
+            Debug.Log($"[종이접기] foldingSourceLayers 개수: {foldingSourceLayers.Count}");
+
+            CombatManager.Instance?.UpdateUnitPositions();
         }
     }
 
@@ -231,8 +240,17 @@ public class PaperController : SingletonObject<PaperController>
 
         OnPaperTokenized?.Invoke();
 
-        // [추가됨] 1초 뒤에 새로운 종이 생성 (바로 생성하면 토큰화 연출이 안 보일 수 있음)
-        Invoke(nameof(CreateNewPaper), 1.0f);
+        // 자동 초기화 설정에 따라 새 종이 생성 여부 결정
+        if (enableAutoReset)
+        {
+            // [활성화] 1초 뒤에 새로운 종이 생성
+            Invoke(nameof(CreateNewPaper), 1.0f);
+            Debug.Log("[종이] 자동 초기화 활성화: 1초 후 새 종이 생성됩니다.");
+        }
+        else
+        {
+            Debug.Log("[종이] 자동 초기화 비활성화: 종이가 초기화되지 않습니다.");
+        }
     }
 
     public void CreateNewPaper()
@@ -268,6 +286,12 @@ public class PaperController : SingletonObject<PaperController>
     private void UpdatePaperVisuals()
     {
         pointB = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+
+        // 최소 거리 체크 (너무 가까우면 무시)
+        float minDistance = 0.01f; // 최소 거리를 매우 작게 설정
+        if (Vector2.Distance(pointA, pointB) < minDistance)
+            return;
+
         newVerticesLayers.Clear();
         flipedVerticesLayers.Clear();
         foldingSourceLayers.Clear();
@@ -276,9 +300,6 @@ public class PaperController : SingletonObject<PaperController>
         Vector2 midPoint = (pointA + pointB) / 2f;
         Vector2 abDirection = (pointB - pointA).normalized;
         Vector2 foldAxis = new(-abDirection.y, abDirection.x);
-
-        if (abDirection == Vector2.zero)
-            return;
 
         // [수정됨] 모든 레이어를 순회하며, 접힌 상태여도 새로운 선에 의해 잘리도록 처리
         for (int i = 0; i < currentVerticesLayers.Count; i++)
@@ -311,6 +332,12 @@ public class PaperController : SingletonObject<PaperController>
 
                 foldingSourceLayers.Add(polyB);
                 flipedVerticesLayers.Add(flipedPolyB);
+
+                Debug.Log($"[종이접기] PolyB 추가 - 점 개수: {polyB.Count}, FlipedPolyB 점 개수: {flipedPolyB.Count}");
+            }
+            else
+            {
+                Debug.LogWarning($"[종이접기] PolyB가 유효하지 않음 - FlipedPolyB 점 개수: {flipedPolyB.Count}");
             }
         }
 

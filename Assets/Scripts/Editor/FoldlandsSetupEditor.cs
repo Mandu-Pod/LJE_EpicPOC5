@@ -207,22 +207,23 @@ public class FoldlandsSetupEditor : EditorWindow
     {
         // 기존 매니저들 확인 및 제거
         DestroyExistingManager<GameManager>();
-        DestroyExistingManager<TurnSystem>();
-        DestroyExistingManager<PopulationManager>();
+        // DestroyExistingManager<TurnSystem>(); // 전투 시스템으로 전환으로 비활성화
+        // DestroyExistingManager<PopulationManager>(); // 전투 시스템으로 전환으로 비활성화
         DestroyExistingManager<InventorySystem>();
         DestroyExistingManager<MarkManager>();
+        DestroyExistingManager<CombatManager>();
 
         // GameManager
         GameObject gameManagerObj = new GameObject("GameManager");
         gameManagerObj.AddComponent<GameManager>();
 
-        // TurnSystem
-        GameObject turnSystemObj = new GameObject("TurnSystem");
-        turnSystemObj.AddComponent<TurnSystem>();
+        // CombatManager (전투 시스템)
+        GameObject combatManagerObj = new GameObject("CombatManager");
+        combatManagerObj.AddComponent<CombatManager>();
 
-        // PopulationManager
-        GameObject populationObj = new GameObject("PopulationManager");
-        populationObj.AddComponent<PopulationManager>();
+        // PopulationManager (비활성화됨)
+        // GameObject populationObj = new GameObject("PopulationManager");
+        // populationObj.AddComponent<PopulationManager>();
 
         // InventorySystem
         GameObject inventoryObj = new GameObject("InventorySystem");
@@ -308,7 +309,9 @@ public class FoldlandsSetupEditor : EditorWindow
         // UIManager 추가
         UIManager uiManager = canvasObj.AddComponent<UIManager>();
 
-        // ========== 좌측 상단: 생존 정보 ==========
+        // ========== 좌측 상단: 전투 정보 (SurvivalUI 제거) ==========
+        // 전투 시스템에서는 SurvivalUI를 사용하지 않음
+        /*
         GameObject survivalPanel = CreatePanel("SurvivalPanel", canvasObj.transform,
             new Vector2(0, 1), new Vector2(0, 1), new Vector2(10, -10), new Vector2(200, 150));
         SurvivalUI survivalUI = survivalPanel.AddComponent<SurvivalUI>();
@@ -341,6 +344,7 @@ public class FoldlandsSetupEditor : EditorWindow
         survivalSO.FindProperty("foodText").objectReferenceValue = foodTextObj.GetComponent<TextMeshProUGUI>();
         survivalSO.FindProperty("paperAreaText").objectReferenceValue = areaTextObj.GetComponent<TextMeshProUGUI>();
         survivalSO.ApplyModifiedProperties();
+        */
 
         // ========== 우측 상단: 인벤토리 ==========
         GameObject inventoryPanel = CreatePanel("InventoryPanel", canvasObj.transform,

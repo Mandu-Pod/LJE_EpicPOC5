@@ -272,7 +272,7 @@ public class MarkManager : SingletonObject<MarkManager>
         if (anyResourceGenerated)
         {
             OnResourceGenerated?.Invoke();
-            TurnSystem.Instance?.RegisterEffectiveFold();
+            // 전투 시스템에서는 턴 시스템을 사용하지 않음
         }
     }
 
