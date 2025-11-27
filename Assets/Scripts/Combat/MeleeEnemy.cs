@@ -50,7 +50,6 @@ public class MeleeEnemy : Unit
             {
                 facingDirection = toPlayer;
                 isDirectionLocked = true;
-                Debug.Log($"[MeleeEnemy] 공격 방향 고정: {facingDirection}");
             }
         }
     }

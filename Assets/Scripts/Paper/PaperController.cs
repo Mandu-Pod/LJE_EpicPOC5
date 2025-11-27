@@ -83,7 +83,6 @@ public class PaperController : SingletonObject<PaperController>
         CreateSquareMesh();
         initialArea = CurrentArea;
         isInitialized = true;
-        Debug.Log($"[종이] 초기 면적: {initialArea}");
         OnPaperInitialized?.Invoke();
         // OnPaperFolded는 실제로 종이를 접을 때만 호출되어야 함
     }
@@ -151,7 +150,6 @@ public class PaperController : SingletonObject<PaperController>
         if (Input.GetMouseButtonDown(1))
         {
             isDragging = false;
-            Debug.Log($"[접기취소] 현재 레이어 수: {currentVerticesLayers.Count}");
             UpdateMeshes(currentVerticesLayers, currentLayerFoldedStates);
             MarkManager.Instance?.RestoreMarkVisibility();
             CombatManager.Instance?.RestoreUnitPositions();
@@ -188,8 +186,6 @@ public class PaperController : SingletonObject<PaperController>
                     currentVerticesLayers = new List<List<Vector2>>(newVerticesLayers);
                     currentLayerFoldedStates = new List<bool>(newLayerFoldedStates);
 
-                    Debug.Log($"[접기확정] 레이어 수: {currentVerticesLayers.Count}");
-
                     // 접기 확정 후 메시 업데이트
                     UpdateMeshes(currentVerticesLayers, currentLayerFoldedStates);
 
@@ -207,9 +203,6 @@ public class PaperController : SingletonObject<PaperController>
             UpdatePaperVisuals();
             MarkManager.Instance?.UpdateMarkVisibility();
 
-            // 유닛 업데이트 전에 foldingSourceLayers 상태 로그
-            Debug.Log($"[종이접기] foldingSourceLayers 개수: {foldingSourceLayers.Count}");
-
             CombatManager.Instance?.UpdateUnitPositions();
         }
     }
@@ -217,7 +210,6 @@ public class PaperController : SingletonObject<PaperController>
     private void CheckTokenize()
     {
         float ratio = AreaRatio;
-        Debug.Log($"[종이] 현재 면적 비율: {ratio:P1}");
 
         if (ratio <= tokenizeThreshold)
         {
@@ -228,7 +220,6 @@ public class PaperController : SingletonObject<PaperController>
     private void Tokenize()
     {
         isTokenized = true;
-        Debug.Log("[종이] 토큰화! 종이가 토큰으로 변환됩니다.");
 
         MarkManager.Instance?.ClearAllMarks();
 
@@ -245,18 +236,11 @@ public class PaperController : SingletonObject<PaperController>
         {
             // [활성화] 1초 뒤에 새로운 종이 생성
             Invoke(nameof(CreateNewPaper), 1.0f);
-            Debug.Log("[종이] 자동 초기화 활성화: 1초 후 새 종이 생성됩니다.");
-        }
-        else
-        {
-            Debug.Log("[종이] 자동 초기화 비활성화: 종이가 초기화되지 않습니다.");
         }
     }
 
     public void CreateNewPaper()
     {
-        Debug.Log("[종이] 새로운 종이 생성 중...");
-
         // 1. 상태 플래그 초기화
         isTokenized = false;
         isDragging = false;
@@ -332,12 +316,6 @@ public class PaperController : SingletonObject<PaperController>
 
                 foldingSourceLayers.Add(polyB);
                 flipedVerticesLayers.Add(flipedPolyB);
-
-                Debug.Log($"[종이접기] PolyB 추가 - 점 개수: {polyB.Count}, FlipedPolyB 점 개수: {flipedPolyB.Count}");
-            }
-            else
-            {
-                Debug.LogWarning($"[종이접기] PolyB가 유효하지 않음 - FlipedPolyB 점 개수: {flipedPolyB.Count}");
             }
         }
 
@@ -345,8 +323,6 @@ public class PaperController : SingletonObject<PaperController>
     }
     private void UpdateMeshes(List<List<Vector2>> verticesLayers, List<bool> layerFolded)
     {
-        Debug.Log($"[메시업데이트] 총 레이어: {verticesLayers.Count}, 메시 오브젝트: {paperMeshObjects.Count}");
-
         // 필요한 만큼 메시 오브젝트 생성
         while (paperMeshObjects.Count < verticesLayers.Count)
         {
@@ -360,7 +336,6 @@ public class PaperController : SingletonObject<PaperController>
                 thisMeshRenderer.material = paperFrontMaterial;
 
             paperMeshObjects.Add(meshObj);
-            Debug.Log($"[메시생성] {meshObj.name} 생성");
         }
 
         // 접힌 레이어와 접히지 않은 레이어를 분리
@@ -418,15 +393,12 @@ public class PaperController : SingletonObject<PaperController>
 
                     // 렌더링 순서도 설정 (2D sorting)
                     thisMeshRenderer.sortingOrder = isFolded ? 10 + i : 0 + i;
-
-                    Debug.Log($"[메시활성] {meshObj.name} - 접힘:{isFolded}, Z:{zOffset:F3}, Sort:{thisMeshRenderer.sortingOrder}");
                 }
             }
             else
             {
                 // 사용하지 않는 메시는 비활성화
                 meshObj.SetActive(false);
-                Debug.Log($"[메시비활성] {meshObj.name} 비활성화");
             }
         }
     }

@@ -62,8 +62,6 @@ public class CombatManager : SingletonObject<CombatManager>
     /// </summary>
     public void StartNewRound()
     {
-        Debug.Log("[전투] 새로운 라운드 시작");
-
         // 기존 유닛들 정리
         ClearAllUnits();
 
@@ -82,8 +80,6 @@ public class CombatManager : SingletonObject<CombatManager>
 
         // 공격 범위 표시
         ShowAttackRanges();
-
-        Debug.Log("[전투] 종이를 접으면 전투가 실행됩니다!");
     }
 
     /// <summary>
@@ -93,7 +89,6 @@ public class CombatManager : SingletonObject<CombatManager>
     {
         if (playerPrefab == null)
         {
-            Debug.LogError("[전투] 플레이어 프리팹이 없습니다!");
             return;
         }
 
@@ -106,8 +101,6 @@ public class CombatManager : SingletonObject<CombatManager>
         player = playerObj.GetComponent<Player>();
         if (player == null)
             player = playerObj.AddComponent<Player>();
-
-        Debug.Log($"[전투] 플레이어 스폰: {spawnPos}");
     }
 
     /// <summary>
@@ -125,7 +118,6 @@ public class CombatManager : SingletonObject<CombatManager>
 
             if (enemyPrefab == null)
             {
-                Debug.LogWarning($"[전투] {(isMelee ? "근접" : "원거리")} 적 프리팹이 없습니다!");
                 continue;
             }
 
@@ -151,8 +143,6 @@ public class CombatManager : SingletonObject<CombatManager>
             }
 
             allEnemies.Add(enemy);
-
-            Debug.Log($"[전투] {(isMelee ? "근접" : "원거리")} 적 스폰: {spawnPos}");
         }
     }
 
@@ -207,7 +197,6 @@ public class CombatManager : SingletonObject<CombatManager>
         }
 
         isShowingAttackRanges = true;
-        Debug.Log("[전투] 공격 범위 표시");
     }
 
     /// <summary>
@@ -425,7 +414,6 @@ public class CombatManager : SingletonObject<CombatManager>
         // 게임이 시작되지 않았으면 무시
         if (!isGameStarted)
         {
-            Debug.Log("[전투] 게임이 아직 시작되지 않았습니다. 종이 접기 무시.");
             return;
         }
 
@@ -464,8 +452,6 @@ public class CombatManager : SingletonObject<CombatManager>
     /// </summary>
     private IEnumerator CombatAndNextRoundSequence()
     {
-        Debug.Log("[전투] 종이 접기 완료! 전투 실행 중...");
-
         // 1. 전투 실행
         yield return StartCoroutine(ExecuteCombatSequence());
 
@@ -473,8 +459,6 @@ public class CombatManager : SingletonObject<CombatManager>
         if (player != null && player.IsAlive)
         {
             yield return new WaitForSeconds(0.5f);
-
-            Debug.Log("[전투] 다음 라운드 준비 중...");
 
             // 3. 적 추가 스폰
             SpawnEnemies(enemiesPerFold);
@@ -484,12 +468,8 @@ public class CombatManager : SingletonObject<CombatManager>
             // 4. 모든 적(기존 + 새로운 적)의 방향을 플레이어 쪽으로 재설정
             UpdateAllEnemyDirections();
 
-            Debug.Log("[전투] 공격 범위 표시 중...");
-
             // 5. 공격 범위 표시
             ShowAttackRanges();
-
-            Debug.Log("[전투] 종이를 접으면 다음 전투가 실행됩니다!");
         }
     }
 
@@ -500,8 +480,6 @@ public class CombatManager : SingletonObject<CombatManager>
     {
         isInCombat = true;
         OnCombatStart?.Invoke();
-
-        Debug.Log("[전투] 전투 시작!");
 
         yield return new WaitForSeconds(0.5f);
 
@@ -528,16 +506,12 @@ public class CombatManager : SingletonObject<CombatManager>
         isInCombat = false;
         OnCombatEnd?.Invoke();
 
-        Debug.Log($"[전투] 전투 종료! 남은 적: {allEnemies.Count}");
-
         // 플레이어가 죽었는지 확인
         if (player == null || !player.IsAlive)
         {
-            Debug.Log("[전투] 플레이어 사망으로 게임 종료");
         }
         else if (allEnemies.Count == 0)
         {
-            Debug.Log("[전투] 모든 적 처치! 종이를 접어서 계속 진행하세요.");
         }
     }
 
@@ -548,13 +522,11 @@ public class CombatManager : SingletonObject<CombatManager>
     {
         if (unit == player)
         {
-            Debug.Log("[전투] 플레이어 사망! 게임 오버");
             OnPlayerDeath?.Invoke();
             HideAttackRanges();
         }
         else
         {
-            Debug.Log($"[전투] {unit.UnitType} 사망");
             allEnemies.Remove(unit);
         }
 
@@ -602,8 +574,6 @@ public class CombatManager : SingletonObject<CombatManager>
                 allUnits.Add(enemy);
         }
 
-        Debug.Log($"[전투] UpdateUnitPositions - 총 유닛 수: {allUnits.Count} (플레이어: {(player != null && player.IsAlive ? 1 : 0)}, 적: {allEnemies.Count})");
-
         foreach (Unit unit in allUnits)
         {
             if (unit == null) continue;
@@ -613,14 +583,11 @@ public class CombatManager : SingletonObject<CombatManager>
             // 접히는 영역에 있는지 체크
             bool isInFoldingSource = PaperController.Instance.IsPointInsideFoldingSource(originalPos);
 
-            Debug.Log($"[전투] {unit.UnitType} - 원래 위치: {originalPos}, 접히는 영역: {isInFoldingSource}");
-
             if (isInFoldingSource)
             {
                 // 반사 위치로 이동
                 Vector2 reflectedPos = PaperController.Instance.GetReflectedPositionRealtime(originalPos);
                 unit.MoveToFlippedPosition(reflectedPos);
-                Debug.Log($"[전투] {unit.UnitType} - 반사 위치로 이동: {reflectedPos}");
             }
             else
             {

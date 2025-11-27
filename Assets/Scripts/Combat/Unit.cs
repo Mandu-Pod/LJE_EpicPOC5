@@ -49,7 +49,6 @@ public abstract class Unit : MonoBehaviour
         if (!IsAlive) return;
 
         currentHP -= damage;
-        Debug.Log($"[유닛] {unitData.unitType} 데미지 {damage} 받음 (HP: {currentHP}/{unitData.maxHP})");
 
         if (currentHP <= 0)
         {
@@ -63,7 +62,6 @@ public abstract class Unit : MonoBehaviour
     /// </summary>
     protected virtual void Die()
     {
-        Debug.Log($"[유닛] {unitData.unitType} 사망");
         OnUnitDeath?.Invoke(this);
     }
 
@@ -85,7 +83,6 @@ public abstract class Unit : MonoBehaviour
         {
             if (target != null && target.IsAlive)
             {
-                Debug.Log($"[전투] {unitData.unitType}이(가) {target.UnitType}을(를) 공격!");
                 target.TakeDamage(AttackPower);
             }
         }

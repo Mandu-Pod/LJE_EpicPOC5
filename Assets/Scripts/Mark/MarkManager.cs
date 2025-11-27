@@ -68,15 +68,12 @@ public class MarkManager : SingletonObject<MarkManager>
             Vector2 pos = PaperController.Instance.GetRandomInternalPoint();
             SpawnMark(axePrefab, pos, MarkType.Axe);
         }
-
-        Debug.Log($"[마크] 초기 마크 생성 완료 - 나무: {initialTreeCount}, 도끼: {initialAxeCount}");
     }
 
     private void SpawnMark(GameObject prefab, Vector2 position, MarkType type)
     {
         if (prefab == null)
         {
-            Debug.LogWarning($"[마크] {type} 프리팹이 없습니다.");
             return;
         }
 
@@ -247,8 +244,6 @@ public class MarkManager : SingletonObject<MarkManager>
                 remainingMarks.Add(mark);
         }
 
-        Debug.Log($"[마크] 접힌 마크: {flippedMarks.Count}, 남은 마크: {remainingMarks.Count}");
-
         // 겹침 판정 및 조합 처리
         bool anyResourceGenerated = ProcessOverlaps(flippedMarks, remainingMarks);
 
@@ -298,8 +293,6 @@ public class MarkManager : SingletonObject<MarkManager>
 
                     if (recipe != null)
                     {
-                        Debug.Log($"[조합] {flipped.Type} + {remaining.Type} = {recipe.result} (거리: {distance:F2})");
-
                         InventorySystem.Instance?.AddItem(recipe.result);
                         anyGenerated = true;
 
@@ -328,12 +321,7 @@ public class MarkManager : SingletonObject<MarkManager>
             bool shouldDestroy = mark.UseTool();
             if (shouldDestroy)
             {
-                Debug.Log($"[마크] {mark.Type} 내구도 소진, 파괴됨");
                 marksToRemove.Add(mark);
-            }
-            else
-            {
-                Debug.Log($"[마크] {mark.Type} 내구도 남음: {mark.Durability}");
             }
         }
         else

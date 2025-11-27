@@ -23,14 +23,11 @@ public class GameManager : SingletonObject<GameManager>
     private void HandlePlayerDeath()
     {
         isGameOver = true;
-        Debug.Log("========== 게임 오버 ==========");
-        Debug.Log("플레이어가 사망했습니다!");
         // TODO: 게임 오버 UI 표시
     }
 
     private void HandlePaperTokenized()
     {
-        Debug.Log("[게임] 종이가 토큰으로 변환되었습니다!");
         // TODO: 새 종이 제공 또는 게임 종료 처리
 
         InventorySystem.Instance.AddItem(MarkType.Token, 1);

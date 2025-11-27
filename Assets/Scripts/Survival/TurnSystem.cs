@@ -24,7 +24,6 @@ public class TurnSystem : SingletonObject<TurnSystem>
     public void RegisterEffectiveFold()
     {
         effectiveFoldCount++;
-        Debug.Log($"[턴] 유효 접기 {effectiveFoldCount}/{foldsPerDay}");
         OnFoldCountChanged?.Invoke();
         
         if (effectiveFoldCount >= foldsPerDay)
@@ -37,7 +36,6 @@ public class TurnSystem : SingletonObject<TurnSystem>
     private void AdvanceDay()
     {
         currentDay++;
-        Debug.Log($"[턴] === {currentDay}일차 시작 ===");
         OnDayPassed?.Invoke();
     }
 }

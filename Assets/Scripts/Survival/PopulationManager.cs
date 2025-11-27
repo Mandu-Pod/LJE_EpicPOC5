@@ -43,7 +43,6 @@ public class PopulationManager : SingletonObject<PopulationManager>
     public void AddFood(int amount)
     {
         currentFood += amount;
-        Debug.Log($"[생존] 식량 +{amount} (현재: {currentFood})");
         OnFoodChanged?.Invoke();
     }
     
@@ -57,7 +56,6 @@ public class PopulationManager : SingletonObject<PopulationManager>
         if (currentFood >= required)
         {
             currentFood -= required;
-            Debug.Log($"[생존] 식량 -{required} 소모 (남은 식량: {currentFood})");
         }
         else
         {
@@ -69,12 +67,10 @@ public class PopulationManager : SingletonObject<PopulationManager>
             currentFood = 0;
             currentPopulation -= deaths;
             
-            Debug.Log($"[생존] 식량 부족! {deaths}명 사망 (남은 인구: {currentPopulation})");
             OnPopulationChanged?.Invoke();
             
             if (currentPopulation <= 0)
             {
-                Debug.Log("[생존] 게임 오버 - 모든 영지민 사망");
                 OnGameOver?.Invoke();
             }
         }

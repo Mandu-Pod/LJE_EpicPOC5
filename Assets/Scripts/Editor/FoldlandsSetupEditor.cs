@@ -32,7 +32,6 @@ public class FoldlandsSetupEditor : EditorWindow
         CreatePaper();
         CreateUI();
 
-        Debug.Log("[Foldlands] 셋업 완료!");
         EditorUtility.DisplayDialog("완료", "Foldlands 셋업이 완료되었습니다!", "확인");
     }
 
@@ -59,7 +58,6 @@ public class FoldlandsSetupEditor : EditorWindow
         }
 
         AssetDatabase.Refresh();
-        Debug.Log("[Foldlands] 폴더 생성 완료");
     }
 
     [MenuItem(MENU_PATH + "2. 머티리얼 생성")]
@@ -89,7 +87,6 @@ public class FoldlandsSetupEditor : EditorWindow
 
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
-        Debug.Log("[Foldlands] 머티리얼 생성 완료");
     }
 
     [MenuItem(MENU_PATH + "3. 마크 프리팹 생성")]
@@ -110,7 +107,6 @@ public class FoldlandsSetupEditor : EditorWindow
 
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
-        Debug.Log("[Foldlands] 마크 프리팹 생성 완료");
     }
 
     private static GameObject CreateMarkObject(string name, string materialPath)
@@ -199,7 +195,6 @@ public class FoldlandsSetupEditor : EditorWindow
 
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
-        Debug.Log("[Foldlands] 레시피 데이터 생성 완료");
     }
 
     [MenuItem(MENU_PATH + "5. 매니저 오브젝트 생성")]
@@ -244,8 +239,6 @@ public class FoldlandsSetupEditor : EditorWindow
         markManagerSO.FindProperty("axePrefab").objectReferenceValue = axePrefab;
         markManagerSO.FindProperty("recipeDatabase").objectReferenceValue = recipeDB;
         markManagerSO.ApplyModifiedProperties();
-
-        Debug.Log("[Foldlands] 매니저 오브젝트 생성 완료");
     }
 
     [MenuItem(MENU_PATH + "6. 종이 오브젝트 생성")]
@@ -289,8 +282,6 @@ public class FoldlandsSetupEditor : EditorWindow
             markManagerSO.FindProperty("markParentTransform").objectReferenceValue = markTransform.transform;
             markManagerSO.ApplyModifiedProperties();
         }
-
-        Debug.Log("[Foldlands] 종이 오브젝트 생성 완료");
     }
 
     [MenuItem(MENU_PATH + "7. UI 캔버스 생성")]
@@ -392,8 +383,6 @@ public class FoldlandsSetupEditor : EditorWindow
         uiSO.FindProperty("gameOverPanel").objectReferenceValue = gameOverPanel;
         uiSO.FindProperty("gameOverText").objectReferenceValue = gameOverTextObj.GetComponent<TextMeshProUGUI>();
         uiSO.ApplyModifiedProperties();
-
-        Debug.Log("[Foldlands] UI 캔버스 생성 완료");
     }
 
     private static GameObject CreatePanel(string name, Transform parent, Vector2 anchorMin, Vector2 anchorMax, Vector2 anchoredPos, Vector2 size)
@@ -460,7 +449,5 @@ public class FoldlandsSetupEditor : EditorWindow
         mainCam.orthographicSize = 5f;
         mainCam.transform.position = new Vector3(0, 0, -10);
         mainCam.backgroundColor = new Color(0.2f, 0.2f, 0.3f);
-
-        Debug.Log("[Foldlands] 카메라 설정 완료");
     }
 }

@@ -51,7 +51,6 @@ public class RangedEnemy : Unit
             {
                 arrowDirection = toPlayer;
                 isDirectionLocked = true;
-                Debug.Log($"[RangedEnemy] 화살 방향 고정: {arrowDirection}");
             }
         }
     }
@@ -110,7 +109,6 @@ public class RangedEnemy : Unit
 
         if (closestInLine != null)
         {
-            Debug.Log($"[RangedEnemy] 화살 공격 대상: {closestInLine.UnitType} (거리: {closestDistance:F2})");
             return new Unit[] { closestInLine };
         }
 
