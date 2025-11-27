@@ -135,8 +135,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   unitData:
     unitType: 1
-    maxHP: 3
-    attackPower: 2
+    maxHP: 1
+    attackPower: 1
     attackRange: 0.6
     attackType: 2
     attackRangeColor: {r: 0.8679245, g: 0.19241722, b: 0.19241722, a: 0.92156863}

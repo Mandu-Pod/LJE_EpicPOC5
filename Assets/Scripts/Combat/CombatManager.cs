@@ -101,6 +101,9 @@ public class CombatManager : SingletonObject<CombatManager>
         player = playerObj.GetComponent<Player>();
         if (player == null)
             player = playerObj.AddComponent<Player>();
+
+        // originalPosition 초기화
+        player.ConfirmPosition();
     }
 
     /// <summary>
@@ -135,6 +138,9 @@ public class CombatManager : SingletonObject<CombatManager>
                     enemyObj.AddComponent<MeleeEnemy>() :
                     enemyObj.AddComponent<RangedEnemy>();
             }
+
+            // originalPosition 초기화
+            enemy.ConfirmPosition();
 
             // RangedEnemy의 경우 플레이어 방향으로 화살 방향 고정
             if (enemy is RangedEnemy rangedEnemy)

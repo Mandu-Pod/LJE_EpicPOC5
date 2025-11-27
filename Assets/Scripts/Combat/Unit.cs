@@ -39,6 +39,13 @@ public abstract class Unit : MonoBehaviour
         unitData = data;
         currentHP = data.maxHP;
         originalPosition = transform.position;
+
+    }
+
+    protected virtual void Start()
+    {
+        originalPosition = transform.position;
+
     }
 
     /// <summary>
@@ -93,10 +100,6 @@ public abstract class Unit : MonoBehaviour
     /// </summary>
     public virtual void MoveToFlippedPosition(Vector2 reflectedPosition)
     {
-        if (!isFlipped)
-        {
-            originalPosition = transform.position;
-        }
         isFlipped = true;
         transform.position = new Vector3(reflectedPosition.x, reflectedPosition.y, transform.position.z);
     }

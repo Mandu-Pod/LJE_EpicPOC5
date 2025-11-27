@@ -35,7 +35,10 @@ public static class PaperRandomUtility
         foreach (var poly in polygons)
         {
             if (IsPointInPolygon(point, poly))
+            {
                 return true;
+
+            }
         }
         return false;
     }

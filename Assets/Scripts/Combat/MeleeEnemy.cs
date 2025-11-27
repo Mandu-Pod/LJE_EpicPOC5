@@ -31,8 +31,9 @@ public class MeleeEnemy : Unit
         }
     }
 
-    private void Start()
+    protected override void Start()
     {
+        base.Start();
         // 스폰 시 플레이어를 향해 방향 설정
         LockDirectionToPlayer();
     }

@@ -193,7 +193,8 @@ public class PaperController : SingletonObject<PaperController>
                     CombatManager.Instance?.ConfirmUnitPositions();
 
                     OnPaperFolded?.Invoke();
-                    CheckTokenize();
+                    if (enableAutoReset)
+                        CheckTokenize();
                 }
             }
         }
