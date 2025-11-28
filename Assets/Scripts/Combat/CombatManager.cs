@@ -438,8 +438,8 @@ public class CombatManager : SingletonObject<CombatManager>
         // 공격 범위 숨김
         HideAttackRanges();
 
-        // 전투 실행 후 다음 라운드 준비
-        StartCoroutine(CombatAndNextRoundSequence());
+        // 전투 실행 후 다음 라운드 준비 (즉시 실행)
+        ExecuteCombatAndNextRound();
     }
 
     /// <summary>
@@ -464,25 +464,21 @@ public class CombatManager : SingletonObject<CombatManager>
     }
 
     /// <summary>
-    /// 전투 실행 후 다음 라운드 준비 시퀀스
+    /// 전투 실행 후 다음 라운드 준비 (즉시 실행)
     /// </summary>
-    private IEnumerator CombatAndNextRoundSequence()
+    private void ExecuteCombatAndNextRound()
     {
         // 1. 전투 실행
-        yield return StartCoroutine(ExecuteCombatSequence());
+        ExecuteCombat();
 
         // 2. 플레이어가 살아있으면 다음 라운드 준비
         if (player != null && player.IsAlive)
         {
-            yield return new WaitForSeconds(0.5f);
-
             // 3. 적 추가 스폰 (최대 라운드 이내일 때만)
             if (foldCount <= maxSpawnRounds)
             {
                 SpawnEnemies(enemiesPerFold);
             }
-
-            yield return new WaitForSeconds(0.3f);
 
             // 4. 모든 적(기존 + 새로운 적)의 방향을 플레이어 쪽으로 재설정
             UpdateAllEnemyDirections();
@@ -493,14 +489,12 @@ public class CombatManager : SingletonObject<CombatManager>
     }
 
     /// <summary>
-    /// 전투 시퀀스 실행
+    /// 전투 실행 (즉시 실행)
     /// </summary>
-    private IEnumerator ExecuteCombatSequence()
+    private void ExecuteCombat()
     {
         isInCombat = true;
         OnCombatStart?.Invoke();
-
-        yield return new WaitForSeconds(0.5f);
 
         // 모든 유닛이 동시에 공격
         List<Unit> allUnits = new List<Unit>();
@@ -515,8 +509,6 @@ public class CombatManager : SingletonObject<CombatManager>
                 unit.PerformAttack();
             }
         }
-
-        yield return new WaitForSeconds(1f);
 
         // 죽은 적 제거
         allEnemies.RemoveAll(e => e == null || !e.IsAlive);
