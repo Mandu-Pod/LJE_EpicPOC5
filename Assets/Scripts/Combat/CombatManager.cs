@@ -22,6 +22,7 @@ public class CombatManager : SingletonObject<CombatManager>
     [SerializeField] private float unitSize = 0.5f;
     [SerializeField] private float minSpawnDistance = 2f; // 플레이어로부터 최소 거리
     [SerializeField] private int enemiesPerFold = 2; // 종이 접을 때마다 생성되는 적 수
+    [SerializeField] private int maxSpawnRounds = 5; // 적이 스폰되는 최대 라운드 수 (0부터 시작)
 
     [Header("공격 범위 시각화")]
     [SerializeField] private GameObject attackRangeIndicatorPrefab;
@@ -37,6 +38,15 @@ public class CombatManager : SingletonObject<CombatManager>
 
     public Player Player => player;
     public bool IsInCombat => isInCombat;
+
+    private void Update()
+    {
+        // R키로 씬 재시작
+        if (Input.GetKeyDown(KeyCode.R))
+        {
+            RestartScene();
+        }
+    }
 
     private void OnEnable()
     {
@@ -466,8 +476,11 @@ public class CombatManager : SingletonObject<CombatManager>
         {
             yield return new WaitForSeconds(0.5f);
 
-            // 3. 적 추가 스폰
-            SpawnEnemies(enemiesPerFold);
+            // 3. 적 추가 스폰 (최대 라운드 이내일 때만)
+            if (foldCount <= maxSpawnRounds)
+            {
+                SpawnEnemies(enemiesPerFold);
+            }
 
             yield return new WaitForSeconds(0.3f);
 
@@ -659,5 +672,15 @@ public class CombatManager : SingletonObject<CombatManager>
                 unit.ConfirmPosition();
             }
         }
+    }
+
+    /// <summary>
+    /// 씬 재시작
+    /// </summary>
+    private void RestartScene()
+    {
+        UnityEngine.SceneManagement.SceneManager.LoadScene(
+            UnityEngine.SceneManagement.SceneManager.GetActiveScene().name
+        );
     }
 }
