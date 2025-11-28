@@ -417,6 +417,7 @@ MonoBehaviour:
   unitSize: 0.5
   minSpawnDistance: 2
   enemiesPerFold: 2
+  maxSpawnRounds: 4
   attackRangeIndicatorPrefab: {fileID: 0}
 --- !u!4 &591558988
 Transform:
@@ -1005,7 +1006,7 @@ Camera:
   far clip plane: 1000
   field of view: 60
   orthographic: 1
-  orthographic size: 2.55
+  orthographic size: 3
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
