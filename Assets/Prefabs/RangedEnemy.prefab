@@ -53,6 +53,9 @@ MonoBehaviour:
     attackRange: 5
     attackType: 1
     attackRangeColor: {r: 0.9622642, g: 0.6921803, b: 0.17702031, a: 0.89411765}
+  spriteRenderer: {fileID: 1947896876407954534}
+  hitFlashColor: {r: 1, g: 0, b: 0, a: 1}
+  hitFlashDuration: 0.15
   arrowDirection: {x: 1, y: 0}
   arrowWidth: 0.1
 --- !u!114 &5742603297623336993

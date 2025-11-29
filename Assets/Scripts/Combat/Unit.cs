@@ -10,13 +10,13 @@ public abstract class Unit : MonoBehaviour
     [SerializeField] protected UnitData unitData;
 
     [Header("시각 효과 설정")]
+    [SerializeField] protected SpriteRenderer spriteRenderer; // 인스펙터에서 할당 가능
     [SerializeField] protected Color hitFlashColor = Color.red;
     [SerializeField] protected float hitFlashDuration = 0.15f;
 
     protected int currentHP;
     protected Vector2 originalPosition;
     protected bool isFlipped = false;
-    protected SpriteRenderer spriteRenderer;
     protected Color originalColor;
 
     public UnitType UnitType => unitData.unitType;
@@ -39,7 +39,18 @@ public abstract class Unit : MonoBehaviour
             currentHP = unitData.maxHP;
         }
 
-        spriteRenderer = GetComponent<SpriteRenderer>();
+        // spriteRenderer가 할당되지 않았으면 자동으로 찾기
+        if (spriteRenderer == null)
+        {
+            spriteRenderer = GetComponent<SpriteRenderer>();
+
+            // 본인에게 없으면 자식에서 찾기
+            if (spriteRenderer == null)
+            {
+                spriteRenderer = GetComponentInChildren<SpriteRenderer>();
+            }
+        }
+
         if (spriteRenderer != null)
         {
             originalColor = spriteRenderer.color;

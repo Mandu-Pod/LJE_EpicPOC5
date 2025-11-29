@@ -140,6 +140,9 @@ MonoBehaviour:
     attackRange: 0.4
     attackType: 0
     attackRangeColor: {r: 0.3725525, g: 0.8679245, b: 0.37932187, a: 0.27058825}
+  spriteRenderer: {fileID: 7891723115300741759}
+  hitFlashColor: {r: 1, g: 0, b: 0, a: 1}
+  hitFlashDuration: 0.15
 --- !u!114 &7723111667513987727
 MonoBehaviour:
   m_ObjectHideFlags: 0
