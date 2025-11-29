@@ -9,9 +9,15 @@ public abstract class Unit : MonoBehaviour
     [Header("유닛 기본 정보")]
     [SerializeField] protected UnitData unitData;
 
+    [Header("시각 효과 설정")]
+    [SerializeField] protected Color hitFlashColor = Color.red;
+    [SerializeField] protected float hitFlashDuration = 0.15f;
+
     protected int currentHP;
     protected Vector2 originalPosition;
     protected bool isFlipped = false;
+    protected SpriteRenderer spriteRenderer;
+    protected Color originalColor;
 
     public UnitType UnitType => unitData.unitType;
     public int CurrentHP => currentHP;
@@ -31,6 +37,12 @@ public abstract class Unit : MonoBehaviour
         if (unitData != null)
         {
             currentHP = unitData.maxHP;
+        }
+
+        spriteRenderer = GetComponent<SpriteRenderer>();
+        if (spriteRenderer != null)
+        {
+            originalColor = spriteRenderer.color;
         }
     }
 
@@ -57,6 +69,9 @@ public abstract class Unit : MonoBehaviour
 
         currentHP -= damage;
 
+        // 피격 효과
+        StartCoroutine(HitFlashEffect());
+
         if (currentHP <= 0)
         {
             currentHP = 0;
@@ -69,7 +84,64 @@ public abstract class Unit : MonoBehaviour
     /// </summary>
     protected virtual void Die()
     {
+        // 사망 파티클 효과
+        CreateDeathParticles();
+
         OnUnitDeath?.Invoke(this);
+    }
+
+    /// <summary>
+    /// 피격 시 깜빡임 효과
+    /// </summary>
+    protected System.Collections.IEnumerator HitFlashEffect()
+    {
+        if (spriteRenderer != null)
+        {
+            spriteRenderer.color = hitFlashColor;
+            yield return new WaitForSeconds(hitFlashDuration);
+            spriteRenderer.color = originalColor;
+        }
+    }
+
+    /// <summary>
+    /// 사망 파티클 생성
+    /// </summary>
+    protected void CreateDeathParticles()
+    {
+        GameObject particleObj = new GameObject("DeathParticles");
+        particleObj.transform.position = transform.position;
+
+        ParticleSystem ps = particleObj.AddComponent<ParticleSystem>();
+        var main = ps.main;
+        main.startLifetime = 0.5f;
+        main.startSpeed = 3f;
+        main.startSize = 0.2f;
+        main.maxParticles = 20;
+        main.simulationSpace = ParticleSystemSimulationSpace.World;
+
+        var emission = ps.emission;
+        emission.rateOverTime = 0;
+        emission.SetBursts(new ParticleSystem.Burst[] { new ParticleSystem.Burst(0f, 20) });
+
+        var shape = ps.shape;
+        shape.shapeType = ParticleSystemShapeType.Circle;
+        shape.radius = 0.3f;
+
+        // 유닛 타입에 따라 색상 설정
+        var colorOverLifetime = ps.colorOverLifetime;
+        colorOverLifetime.enabled = true;
+        Gradient gradient = new Gradient();
+        Color particleColor = unitData != null ? unitData.attackRangeColor : Color.white;
+        gradient.SetKeys(
+            new GradientColorKey[] { new GradientColorKey(particleColor, 0f), new GradientColorKey(particleColor, 1f) },
+            new GradientAlphaKey[] { new GradientAlphaKey(1f, 0f), new GradientAlphaKey(0f, 1f) }
+        );
+        colorOverLifetime.color = gradient;
+
+        ps.Play();
+
+        // 파틴클 종료 후 제거
+        Destroy(particleObj, main.startLifetime.constant + 0.1f);
     }
 
     /// <summary>

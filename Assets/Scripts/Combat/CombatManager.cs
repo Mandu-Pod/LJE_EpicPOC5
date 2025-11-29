@@ -251,13 +251,37 @@ public class CombatManager : SingletonObject<CombatManager>
         else if (unit is RangedEnemy rangedEnemy)
         {
             // 원거리 적: 일직선 화살 범위
-            indicator = CreateArrowIndicator(rangedEnemy);
+            indicator = CreateArrowIndicator(rangedEnemy, false);
         }
 
         if (indicator != null)
         {
             attackRangeIndicators.Add(indicator);
         }
+    }
+
+    /// <summary>
+    /// 전투 중 단일 유닛의 공격 범위 표시 (일회용)
+    /// </summary>
+    private GameObject CreateAttackRangeIndicatorForUnit(Unit unit)
+    {
+        GameObject indicator = null;
+
+        if (unit is Player)
+        {
+            indicator = CreateCircleIndicator(unit);
+        }
+        else if (unit is MeleeEnemy meleeEnemy)
+        {
+            indicator = CreateSemiCircleIndicator(meleeEnemy);
+        }
+        else if (unit is RangedEnemy rangedEnemy)
+        {
+            // 원거리 적: 첫 번째 타겟까지만 표시
+            indicator = CreateArrowIndicator(rangedEnemy, true);
+        }
+
+        return indicator;
     }
 
     /// <summary>
@@ -361,7 +385,7 @@ public class CombatManager : SingletonObject<CombatManager>
     /// <summary>
     /// 일직선 화살 범위 표시기 생성 (RangedEnemy용)
     /// </summary>
-    private GameObject CreateArrowIndicator(RangedEnemy enemy)
+    private GameObject CreateArrowIndicator(RangedEnemy enemy, bool showOnlyToTarget)
     {
         if (enemy == null) return null;
 
@@ -372,8 +396,21 @@ public class CombatManager : SingletonObject<CombatManager>
         MeshFilter meshFilter = indicator.AddComponent<MeshFilter>();
         MeshRenderer meshRenderer = indicator.AddComponent<MeshRenderer>();
 
-        // 직사각형 화살 메시 생성 (길이 = 사거리, 너비 = 화살 두께)
-        Mesh mesh = CreateRectangleMesh(enemy.AttackRange, enemy.ArrowWidth);
+        float arrowLength = enemy.AttackRange;
+
+        // 전투 중에는 첫 번째 타겟까지만 표시
+        if (showOnlyToTarget)
+        {
+            Unit[] targets = enemy.FindTargetsInRange();
+            if (targets.Length > 0)
+            {
+                Vector2 toTarget = targets[0].GetPosition() - enemy.GetPosition();
+                arrowLength = toTarget.magnitude;
+            }
+        }
+
+        // 직사각형 화살 메시 생성
+        Mesh mesh = CreateRectangleMesh(arrowLength, enemy.ArrowWidth);
         meshFilter.mesh = mesh;
 
         // 머티리얼 설정
@@ -468,45 +505,47 @@ public class CombatManager : SingletonObject<CombatManager>
     /// </summary>
     private void ExecuteCombatAndNextRound()
     {
-        // 1. 전투 실행
-        ExecuteCombat();
-
-        // 2. 플레이어가 살아있으면 다음 라운드 준비
-        if (player != null && player.IsAlive)
-        {
-            // 3. 적 추가 스폰 (최대 라운드 이내일 때만)
-            if (foldCount <= maxSpawnRounds)
-            {
-                SpawnEnemies(enemiesPerFold);
-            }
-
-            // 4. 모든 적(기존 + 새로운 적)의 방향을 플레이어 쪽으로 재설정
-            UpdateAllEnemyDirections();
-
-            // 5. 공격 범위 표시
-            ShowAttackRanges();
-        }
+        // 코루틴으로 전투 실행
+        StartCoroutine(ExecuteCombatSequence());
     }
 
     /// <summary>
-    /// 전투 실행 (즉시 실행)
+    /// 전투 실행 코루틴 - 각 유닛의 공격을 순차적으로 표시
     /// </summary>
-    private void ExecuteCombat()
+    private System.Collections.IEnumerator ExecuteCombatSequence()
     {
         isInCombat = true;
         OnCombatStart?.Invoke();
 
-        // 모든 유닛이 동시에 공격
+        // 모든 유닛 리스트 생성
         List<Unit> allUnits = new List<Unit>();
         if (player != null && player.IsAlive)
             allUnits.Add(player);
-        allUnits.AddRange(allEnemies);
 
+        foreach (Unit enemy in allEnemies)
+        {
+            if (enemy != null && enemy.IsAlive)
+                allUnits.Add(enemy);
+        }
+
+        // 각 유닛이 순서대로 공격
         foreach (Unit unit in allUnits)
         {
             if (unit != null && unit.IsAlive)
             {
+                // 이 유닛의 공격 범위만 표시
+                GameObject rangeIndicator = CreateAttackRangeIndicatorForUnit(unit);
+
+                yield return new WaitForSeconds(0.3f); // 공격 범위 표시 시간
+
+                // 공격 실행
                 unit.PerformAttack();
+
+                // 공격 범위 제거
+                if (rangeIndicator != null)
+                    Destroy(rangeIndicator);
+
+                yield return new WaitForSeconds(0.2f); // 다음 공격까지 대기
             }
         }
 
@@ -517,12 +556,20 @@ public class CombatManager : SingletonObject<CombatManager>
         isInCombat = false;
         OnCombatEnd?.Invoke();
 
-        // 플레이어가 죽었는지 확인
-        if (player == null || !player.IsAlive)
+        // 플레이어가 살아있으면 다음 라운드 준비
+        if (player != null && player.IsAlive)
         {
-        }
-        else if (allEnemies.Count == 0)
-        {
+            // 적 추가 스폰 (최대 라운드 이내일 때만)
+            if (foldCount <= maxSpawnRounds)
+            {
+                SpawnEnemies(enemiesPerFold);
+            }
+
+            // 모든 적(기존 + 새로운 적)의 방향을 플레이어 쪽으로 재설정
+            UpdateAllEnemyDirections();
+
+            // 공격 범위 표시
+            ShowAttackRanges();
         }
     }
 
