@@ -11,6 +11,7 @@ public abstract class Unit : MonoBehaviour
 
     [Header("시각 효과 설정")]
     [SerializeField] protected SpriteRenderer spriteRenderer; // 인스펙터에서 할당 가능
+    [SerializeField] protected TMPro.TextMeshPro attackOrderText; // 공격 순서 표시 텍스트
     [SerializeField] protected Color hitFlashColor = Color.red;
     [SerializeField] protected float hitFlashDuration = 0.15f;
 
@@ -54,6 +55,18 @@ public abstract class Unit : MonoBehaviour
         if (spriteRenderer != null)
         {
             originalColor = spriteRenderer.color;
+        }
+
+        // attackOrderText가 할당되지 않았으면 자동으로 찾기
+        if (attackOrderText == null)
+        {
+            attackOrderText = GetComponentInChildren<TMPro.TextMeshPro>();
+        }
+
+        // 초기에는 순서 텍스트 숨김
+        if (attackOrderText != null)
+        {
+            attackOrderText.gameObject.SetActive(false);
         }
     }
 
@@ -211,5 +224,37 @@ public abstract class Unit : MonoBehaviour
     public Vector2 GetPosition()
     {
         return transform.position;
+    }
+
+    /// <summary>
+    /// 공격 순서 설정 및 표시
+    /// </summary>
+    /// <param name="order">공격 순서 (1부터 시작)</param>
+    public virtual void SetAttackOrder(int order)
+    {
+        if (attackOrderText != null)
+        {
+            // 플레이어는 순서 표시 안함
+            if (this is Player)
+            {
+                attackOrderText.gameObject.SetActive(false);
+            }
+            else
+            {
+                attackOrderText.text = order.ToString();
+                attackOrderText.gameObject.SetActive(true);
+            }
+        }
+    }
+
+    /// <summary>
+    /// 공격 순서 표시 숨김
+    /// </summary>
+    public virtual void HideAttackOrder()
+    {
+        if (attackOrderText != null)
+        {
+            attackOrderText.gameObject.SetActive(false);
+        }
     }
 }

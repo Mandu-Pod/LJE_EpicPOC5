@@ -419,6 +419,7 @@ MonoBehaviour:
   enemiesPerFold: 2
   maxSpawnRounds: 4
   attackRangeIndicatorPrefab: {fileID: 0}
+  playerAttacksFirst: 1
 --- !u!4 &591558988
 Transform:
   m_ObjectHideFlags: 0
@@ -1167,8 +1168,8 @@ SceneRoots:
   m_Roots:
   - {fileID: 2061916104}
   - {fileID: 139932563}
-  - {fileID: 1011418115}
   - {fileID: 591558988}
+  - {fileID: 1011418115}
   - {fileID: 1606695652}
   - {fileID: 2017378512}
   - {fileID: 1589533916}

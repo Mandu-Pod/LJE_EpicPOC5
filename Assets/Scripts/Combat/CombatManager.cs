@@ -27,6 +27,9 @@ public class CombatManager : SingletonObject<CombatManager>
     [Header("공격 범위 시각화")]
     [SerializeField] private GameObject attackRangeIndicatorPrefab;
 
+    [Header("전투 순서 설정")]
+    [SerializeField] private bool playerAttacksFirst = true; // true: 플레이어 첫 번째, false: 플레이어 마지막
+
     private Player player;
     private List<Unit> allEnemies = new List<Unit>();
     private List<GameObject> attackRangeIndicators = new List<GameObject>();
@@ -213,6 +216,9 @@ public class CombatManager : SingletonObject<CombatManager>
         }
 
         isShowingAttackRanges = true;
+
+        // 공격 순서 표시 업데이트
+        UpdateAttackOrderDisplay();
     }
 
     /// <summary>
@@ -472,8 +478,9 @@ public class CombatManager : SingletonObject<CombatManager>
 
         foldCount++;
 
-        // 공격 범위 숨김
+        // 공격 범위 및 순서 표시 숨김
         HideAttackRanges();
+        HideAllAttackOrders();
 
         // 전투 실행 후 다음 라운드 준비 (즉시 실행)
         ExecuteCombatAndNextRound();
@@ -517,16 +524,8 @@ public class CombatManager : SingletonObject<CombatManager>
         isInCombat = true;
         OnCombatStart?.Invoke();
 
-        // 모든 유닛 리스트 생성
-        List<Unit> allUnits = new List<Unit>();
-        if (player != null && player.IsAlive)
-            allUnits.Add(player);
-
-        foreach (Unit enemy in allEnemies)
-        {
-            if (enemy != null && enemy.IsAlive)
-                allUnits.Add(enemy);
-        }
+        // 공격 순서대로 유닛 리스트 생성
+        List<Unit> allUnits = GetAttackOrderList();
 
         // 각 유닛이 순서대로 공격
         foreach (Unit unit in allUnits)
@@ -570,6 +569,89 @@ public class CombatManager : SingletonObject<CombatManager>
 
             // 공격 범위 표시
             ShowAttackRanges();
+
+            // 공격 순서 업데이트
+            UpdateAttackOrderDisplay();
+        }
+    }
+
+    /// <summary>
+    /// 공격 순서대로 유닛 리스트 반환
+    /// </summary>
+    private List<Unit> GetAttackOrderList()
+    {
+        List<Unit> orderedUnits = new List<Unit>();
+
+        if (playerAttacksFirst)
+        {
+            // 플레이어가 먼저 공격
+            if (player != null && player.IsAlive)
+                orderedUnits.Add(player);
+
+            foreach (Unit enemy in allEnemies)
+            {
+                if (enemy != null && enemy.IsAlive)
+                    orderedUnits.Add(enemy);
+            }
+        }
+        else
+        {
+            // 적들이 먼저 공격, 플레이어는 마지막
+            foreach (Unit enemy in allEnemies)
+            {
+                if (enemy != null && enemy.IsAlive)
+                    orderedUnits.Add(enemy);
+            }
+
+            if (player != null && player.IsAlive)
+                orderedUnits.Add(player);
+        }
+
+        return orderedUnits;
+    }
+
+    /// <summary>
+    /// 모든 유닛의 공격 순서 표시 업데이트
+    /// </summary>
+    private void UpdateAttackOrderDisplay()
+    {
+        List<Unit> orderedUnits = GetAttackOrderList();
+        int enemyOrder = 1; // 적의 순서는 항상 1부터 시작
+
+        for (int i = 0; i < orderedUnits.Count; i++)
+        {
+            if (orderedUnits[i] != null && orderedUnits[i].IsAlive)
+            {
+                // 적만 순서 표시 (플레이어는 건너뜀)
+                if (!(orderedUnits[i] is Player))
+                {
+                    orderedUnits[i].SetAttackOrder(enemyOrder);
+                    enemyOrder++;
+                }
+                else
+                {
+                    orderedUnits[i].SetAttackOrder(i + 1); // 플레이어는 전체 순서 전달
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// 모든 유닛의 공격 순서 표시 숨김
+    /// </summary>
+    private void HideAllAttackOrders()
+    {
+        if (player != null)
+        {
+            player.HideAttackOrder();
+        }
+
+        foreach (Unit enemy in allEnemies)
+        {
+            if (enemy != null)
+            {
+                enemy.HideAttackOrder();
+            }
         }
     }
 
