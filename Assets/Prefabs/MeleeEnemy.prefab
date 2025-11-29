@@ -135,11 +135,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   unitData:
     unitType: 1
-    maxHP: 1
+    maxHP: 2
     attackPower: 1
     attackRange: 0.6
     attackType: 2
     attackRangeColor: {r: 0.8679245, g: 0.19241722, b: 0.19241722, a: 0.92156863}
+  hitFlashColor: {r: 1, g: 0, b: 0, a: 1}
+  hitFlashDuration: 0.15
   facingDirection: {x: 1, y: 0}
 --- !u!114 &8447130365601971095
 MonoBehaviour:

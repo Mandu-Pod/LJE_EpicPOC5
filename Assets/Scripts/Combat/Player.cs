@@ -28,7 +28,7 @@ public class Player : Unit
     }
 
     /// <summary>
-    /// 플레이어가 데미지를 받을 때 카메라 쉐이크 추가
+    /// 플레이어가 데미지를 받을 때 카메라 쉐이크 및 화면 효과 추가
     /// </summary>
     public override void TakeDamage(int damage)
     {
@@ -38,6 +38,7 @@ public class Player : Unit
         if (IsAlive || currentHP == 0) // 피해를 받았을 때
         {
             CameraShake.Instance.ShakeDefault();
+            DamageVignette.Instance.Flash(); // 화면 가장자리 빨간색 효과
         }
     }
 
