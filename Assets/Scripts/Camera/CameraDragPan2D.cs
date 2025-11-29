@@ -141,14 +141,14 @@ public class CameraDragPan2D : MonoBehaviour
 #endif
     }
 
-        private float GetScrollDeltaY()
-        {
-    #if ENABLE_INPUT_SYSTEM && !ENABLE_LEGACY_INPUT_MANAGER
+    private float GetScrollDeltaY()
+    {
+#if ENABLE_INPUT_SYSTEM && !ENABLE_LEGACY_INPUT_MANAGER
         return Mouse.current != null ? Mouse.current.scroll.ReadValue().y : 0f;
-    #else
+#else
         return Input.mouseScrollDelta.y;
-    #endif
-        }
+#endif
+    }
 
     private void OnDisable()
     {
