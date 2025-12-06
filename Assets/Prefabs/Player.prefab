@@ -27,7 +27,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.15, y: 0.15, z: 1}
+  m_LocalScale: {x: 0.2, y: 0.2, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 5749488680506594627}
@@ -76,7 +76,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 1001
-  m_Sprite: {fileID: 21300000, guid: ed4f3eb6042732a45937b3f71147abe5, type: 3}
+  m_Sprite: {fileID: 21300000, guid: a04a308b936f2944b90a811c12a1f7cf, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -141,6 +141,7 @@ MonoBehaviour:
     attackType: 0
     attackRangeColor: {r: 0.3725525, g: 0.8679245, b: 0.37932187, a: 0.27058825}
   spriteRenderer: {fileID: 7891723115300741759}
+  attackOrderText: {fileID: 0}
   hitFlashColor: {r: 1, g: 0, b: 0, a: 1}
   hitFlashDuration: 0.15
 --- !u!114 &7723111667513987727

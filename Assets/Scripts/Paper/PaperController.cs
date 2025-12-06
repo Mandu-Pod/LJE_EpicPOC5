@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text;
 using UnityEngine;
 
 public class PaperController : SingletonObject<PaperController>
@@ -319,8 +320,42 @@ public class PaperController : SingletonObject<PaperController>
                 flipedVerticesLayers.Add(flipedPolyB);
             }
         }
+        LogVerticesLayers(newVerticesLayers);
 
         UpdateMeshes(newVerticesLayers, newLayerFoldedStates);
+    }
+    void LogVerticesLayers(List<List<Vector2>> newVerticesLayers)
+    {
+        if (newVerticesLayers == null) return;
+
+        StringBuilder sb = new StringBuilder();
+        sb.AppendLine($"Total Layers: {newVerticesLayers.Count}");
+
+        for (int i = 0; i < newVerticesLayers.Count; i++)
+        {
+            sb.Append($"Layer {i}: "); // 레이어 번호 표시 (선택사항)
+
+            List<Vector2> currentLayer = newVerticesLayers[i];
+
+            // 해당 레이어의 모든 버텍스를 한 줄로 연결
+            for (int j = 0; j < currentLayer.Count; j++)
+            {
+                Vector2 v = currentLayer[j];
+                // (x, y) 형태로 포맷팅. 소수점이 필요하면 {v.x:F2} 등으로 변경 가능
+                sb.Append($"({v.x}, {v.y})");
+
+                // 마지막 요소가 아니라면 쉼표 추가
+                if (j < currentLayer.Count - 1)
+                {
+                    sb.Append(", ");
+                }
+            }
+
+            // 다음 레이어를 위해 줄바꿈
+            sb.AppendLine();
+        }
+
+        Debug.Log(sb.ToString());
     }
     private void UpdateMeshes(List<List<Vector2>> verticesLayers, List<bool> layerFolded)
     {
